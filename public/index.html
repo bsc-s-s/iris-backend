@@ -50,6 +50,10 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
 .ltxt{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em}
 .lsub{font-size:8px;color:var(--txt3);letter-spacing:.18em}
 .htag{font-size:8px;color:var(--txt3);border:1px solid var(--brd);padding:3px 8px;letter-spacing:.12em;white-space:nowrap}
+.lang-toggle{display:flex;align-items:center;gap:2px;margin-left:8px}
+.lang-btn{background:transparent;border:1px solid var(--brd2);color:var(--txt3);font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 6px;cursor:pointer;transition:.15s;letter-spacing:.08em}
+.lang-btn:hover{border-color:var(--txt2);color:var(--txt)}
+.lang-btn.active{background:var(--brd2);color:var(--txt);border-color:var(--cyan)}
 
 /* BUTTONS */
 .btnp{background:transparent;border:1.5px solid var(--gold);color:var(--gold);
@@ -986,11 +990,17 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
     <div class="logo">
       <img id="hdr-logo" src="" alt="IRIS" style="width:40px;height:40px;object-fit:contain;flex-shrink:0">
       <div>
-        <div class="ltxt">IRIS DIAGNOSTIC</div>
-        <div class="lsub">STRATEGIC RISK INTELLIGENCE OS <span style="color:var(--gold);letter-spacing:.06em">v4 ENTERPRISE</span></div>
+        <div class="ltxt" data-i18n="hdr.title">IRIS DIAGNOSTIC</div>
+        <div class="lsub"><span data-i18n="hdr.sub">STRATEGIC RISK INTELLIGENCE OS</span> <span style="color:var(--gold);letter-spacing:.06em" data-i18n="hdr.v">v4 ENTERPRISE</span></div>
       </div>
     </div>
-    <div class="htag" id="hdr-right">BSC · BURGOA SECURITY CONSULTANT</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="htag" id="hdr-right" data-i18n="hdr.tag">BSC · BURGOA SECURITY CONSULTANT</div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="lang-es" onclick="setLang('es')">ES</button>
+        <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
   </header>
 
   <!-- LOGIN -->
@@ -1000,29 +1010,29 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
         <div class="login-logo">
           <img id="login-logo-img" src="" alt="IRIS" style="width:90px;height:90px;object-fit:contain">
         </div>
-        <div class="login-title">IRIS Diagnostic System</div>
-        <div class="login-sub">INVISIBLE RISK INTELLIGENCE SYSTEM</div>
+        <div class="login-title" data-i18n="login.title">IRIS Diagnostic System</div>
+        <div class="login-sub" data-i18n="login.sub">INVISIBLE RISK INTELLIGENCE SYSTEM</div>
         <div class="login-box">
-          <div class="login-box-title">AUTENTICACIÓN REQUERIDA</div>
+          <div class="login-box-title" data-i18n="login.box">AUTENTICACIÓN REQUERIDA</div>
           <div class="lgroup">
-            <label class="llabel" for="l-email">IDENTIFICADOR DE ACCESO</label>
+            <label class="llabel" for="l-email" data-i18n="login.email">IDENTIFICADOR DE ACCESO</label>
             <input class="linput" id="l-email" type="email" placeholder="usuario@empresa.com" autocomplete="email">
           </div>
           <div class="lgroup">
-            <label class="llabel" for="l-pass">CLAVE DE ACCESO</label>
+            <label class="llabel" for="l-pass" data-i18n="login.pass">CLAVE DE ACCESO</label>
             <input class="linput" id="l-pass" type="password" placeholder="••••••••••••" autocomplete="current-password"
               onkeydown="if(event.key==='Enter')doLogin()">
           </div>
           <div class="login-error" id="login-error"></div>
           <div class="login-actions">
-            <button class="btnp" onclick="doLogin()" id="login-btn" style="width:100%"><span>INICIAR SESIÓN SEGURA →</span></button>
+            <button class="btnp" onclick="doLogin()" id="login-btn" style="width:100%"><span data-i18n="login.btn">INICIAR SESIÓN SEGURA →</span></button>
             <div class="login-spinner" id="login-spin"></div>
           </div>
         </div>
-        <div class="login-security">ACCESO RESTRINGIDO · SISTEMA CERTIFICADO BSC</div>
+        <div class="login-security" data-i18n="login.sec">ACCESO RESTRINGIDO · SISTEMA CERTIFICADO BSC</div>
         <div class="login-footer">
-          Burgoa Security Consultant · Andorra · España · Europa<br>
-          <span style="color:var(--txt3);font-size:7px">Este sistema registra todos los accesos y sesiones activas</span>
+          <span data-i18n="login.footer">Burgoa Security Consultant · Andorra · España · Europa</span><br>
+          <span style="color:var(--txt3);font-size:7px" data-i18n="login.log">Este sistema registra todos los accesos y sesiones activas</span>
         </div>
       </div>
     </div>
@@ -1034,45 +1044,45 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
       <div class="admin-header">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
           <div>
-            <div class="admin-title">Panel de Administración</div>
-            <div class="admin-sub">GESTIÓN DE USUARIOS · IRIS DIAGNOSTIC SYSTEM</div>
+            <div class="admin-title" data-i18n="admin.title">Panel de Administración</div>
+            <div class="admin-sub" data-i18n="admin.sub">GESTIÓN DE USUARIOS · IRIS DIAGNOSTIC SYSTEM</div>
           </div>
-          <div style="display:flex;gap:8px"><button class="btnp" onclick="show('dashboard');dashNav('nuevo')"><span>← DASHBOARD</span></button><button class="btng" onclick="show('dashboard');dashNav('nuevo')">NUEVO DIAGNÓSTICO</button></div>
+          <div style="display:flex;gap:8px"><button class="btnp" onclick="show('dashboard');dashNav('nuevo')"><span data-i18n="admin.db">← DASHBOARD</span></button><button class="btng" onclick="show('dashboard');dashNav('nuevo')" data-i18n="admin.nd">NUEVO DIAGNÓSTICO</button></div>
         </div>
       </div>
       <div class="admin-tabs">
-        <button class="admin-tab active" onclick="adminTab('users')" id="tab-users">USUARIOS</button>
-        <button class="admin-tab" onclick="adminTab('add')" id="tab-add">AGREGAR USUARIO</button>
+        <button class="admin-tab active" onclick="adminTab('users')" id="tab-users" data-i18n="admin.users">USUARIOS</button>
+        <button class="admin-tab" onclick="adminTab('add')" id="tab-add" data-i18n="admin.add">AGREGAR USUARIO</button>
       </div>
       <div id="admin-add" style="display:none">
         <div class="add-user-form">
-          <div class="form-block-title">NUEVO USUARIO</div>
+          <div class="form-block-title" data-i18n="admin.new">NUEVO USUARIO</div>
           <div class="add-user-grid">
-            <div class="fgroup"><label class="flabel">NOMBRE</label><input class="finput" id="nu-nombre" type="text" placeholder="Nombre completo"></div>
-            <div class="fgroup"><label class="flabel">EMAIL</label><input class="finput" id="nu-email" type="email" placeholder="email@empresa.com"></div>
-            <div class="fgroup"><label class="flabel">CONTRASEÑA</label><input class="finput" id="nu-pass" type="text" placeholder="Contraseña inicial"></div>
-            <div class="fgroup"><label class="flabel">EMPRESA</label><input class="finput" id="nu-empresa" type="text" placeholder="Empresa del cliente"></div>
-            <div class="fgroup"><label class="flabel">PLAN / ACCESO</label>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.nombre">NOMBRE</label><input class="finput" id="nu-nombre" type="text" data-i18n="admin.ph1" placeholder="Nombre completo"></div>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.email">EMAIL</label><input class="finput" id="nu-email" type="email" data-i18n="admin.ph2" placeholder="email@empresa.com"></div>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.pass">CONTRASEÑA</label><input class="finput" id="nu-pass" type="text" data-i18n="admin.ph3" placeholder="Contraseña inicial"></div>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.emp">EMPRESA</label><input class="finput" id="nu-empresa" type="text" data-i18n="admin.ph4" placeholder="Empresa del cliente"></div>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.plan">PLAN / ACCESO</label>
               <select class="fselect" id="nu-plan">
-                <option value="standard">Standard (SEG)</option>
-                <option value="premium">Premium (SEG+ECO)</option>
-                <option value="enterprise">Enterprise (4 módulos)</option>
-                <option value="admin">Admin</option>
+                <option value="standard" data-i18n="admin.std">Standard (SEG)</option>
+                <option value="premium" data-i18n="admin.prem">Premium (SEG+ECO)</option>
+                <option value="enterprise" data-i18n="admin.ent">Enterprise (4 módulos)</option>
+                <option value="admin" data-i18n="admin.adm">Admin</option>
               </select>
             </div>
-            <div class="fgroup"><label class="flabel">VENCIMIENTO (opcional)</label><input class="finput" id="nu-fecha" type="date"></div>
+            <div class="fgroup"><label class="flabel" data-i18n="admin.exp">VENCIMIENTO (opcional)</label><input class="finput" id="nu-fecha" type="date"></div>
           </div>
           <div id="add-msg" style="font-size:10px;margin-bottom:12px;min-height:16px"></div>
-          <button class="btnp" onclick="addUser()"><span>CREAR USUARIO →</span></button>
+          <button class="btnp" onclick="addUser()"><span data-i18n="admin.create">CREAR USUARIO →</span></button>
         </div>
       </div>
       <div id="admin-users">
-        <div id="users-loading" style="font-size:11px;color:var(--txt3);padding:20px 0;letter-spacing:.1em">Cargando usuarios...</div>
+        <div id="users-loading" style="font-size:11px;color:var(--txt3);padding:20px 0;letter-spacing:.1em" data-i18n="admin.load">Cargando usuarios...</div>
         <div style="overflow-x:auto">
         <table class="users-table" id="users-table" style="display:none">
           <thead><tr>
-            <th>NOMBRE</th><th>EMAIL</th><th>EMPRESA</th><th>PLAN</th>
-            <th>ESTADO</th><th>VENCIMIENTO</th><th>USOS</th><th>ACCIONES</th>
+            <th data-i18n="admin.nombre">NOMBRE</th><th data-i18n="admin.email">EMAIL</th><th data-i18n="admin.emp">EMPRESA</th><th data-i18n="admin.plan">PLAN</th>
+            <th data-i18n="admin.estado" style="display:none">ESTADO</th><th data-i18n="admin.exp">VENCIMIENTO</th><th>USOS</th><th data-i18n="dash.acc">ACCIONES</th>
           </tr></thead>
           <tbody id="users-tbody"></tbody>
         </table>
@@ -1085,36 +1095,36 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
   <div id="hero" class="hidden">
     <div class="intake-outer">
     <div class="intake">
-      <div class="eyebrow">SISTEMA DE INTELIGENCIA DE RIESGOS · BSC</div>
+      <div class="eyebrow" data-i18n="hero.eye">SISTEMA DE INTELIGENCIA DE RIESGOS · BSC</div>
       <div style="display:flex;justify-content:center;margin-bottom:14px">
         <img id="hero-logo" src="" alt="IRIS" style="width:100px;height:100px;object-fit:contain">
       </div>
-      <h1 class="htitle"><span>IRIS</span> Diagnostic System</h1>
-      <p class="hsub">Registra los datos del diagnóstico antes de iniciar el análisis. Esta información contextualiza el informe de inteligencia final.</p>
-      <div style="text-align:left;margin-bottom:12px"><button class="btng" style="font-size:8px;padding:5px 12px" onclick="show('dashboard');dashNav('overview')">← COMMAND CENTER</button></div>
+      <h1 class="htitle"><span>IRIS</span> <span data-i18n="hero.title">Diagnostic System</span></h1>
+      <p class="hsub" data-i18n-html="true" data-i18n="hero.sub_base">Registra los datos del diagnóstico antes de iniciar el análisis. Esta información contextualiza el informe de inteligencia final.</p>
+      <div style="text-align:left;margin-bottom:12px"><button class="btng" style="font-size:8px;padding:5px 12px" onclick="show('dashboard');dashNav('overview')" data-i18n="hero.back">← COMMAND CENTER</button></div>
       <div class="spec-strip">
-        <div class="spec-item"><div class="spec-val">4</div><div class="spec-lbl">ÁREAS DE RIESGO</div></div>
-        <div class="spec-item"><div class="spec-val">120+</div><div class="spec-lbl">VECTORES IRIS</div></div>
-        <div class="spec-item"><div class="spec-val">IRIS v4</div><div class="spec-lbl">ENTERPRISE</div></div>
+        <div class="spec-item"><div class="spec-val">4</div><div class="spec-lbl" data-i18n="hero.ar">ÁREAS DE RIESGO</div></div>
+        <div class="spec-item"><div class="spec-val">120+</div><div class="spec-lbl" data-i18n="hero.vi">VECTORES IRIS</div></div>
+        <div class="spec-item"><div class="spec-val">IRIS v4</div><div class="spec-lbl" data-i18n="hero.ent">ENTERPRISE</div></div>
       </div>
 
       <div class="mission-card">
         <div class="mission-card-header">
-          <div class="mission-card-title">REGISTRO DE MISIÓN · DATOS DEL DIAGNÓSTICO</div>
-          <div class="mission-card-tag">CONFIDENCIAL</div>
+          <div class="mission-card-title" data-i18n="hero.card">REGISTRO DE MISIÓN · DATOS DEL DIAGNÓSTICO</div>
+          <div class="mission-card-tag" data-i18n="hero.conf">CONFIDENCIAL</div>
         </div>
         <div class="mission-card-body">
 
         <div class="fgroup">
-          <label class="flabel" for="f-empresa">ENTIDAD OBJETIVO DEL ANÁLISIS</label>
-          <input class="finput" id="f-empresa" type="text" placeholder="Nombre de la empresa u organización" maxlength="80">
-          <div class="form-error" id="err-empresa">Campo requerido</div>
+          <label class="flabel" for="f-empresa" data-i18n="hero.lab1">ENTIDAD OBJETIVO DEL ANÁLISIS</label>
+          <input class="finput" id="f-empresa" type="text" data-i18n="hero.ph1" placeholder="Nombre de la empresa u organización" maxlength="80">
+          <div class="form-error" id="err-empresa" data-i18n="hero.err">Campo requerido</div>
         </div>
 
         <div class="fgroup">
-          <label class="flabel" for="f-sector">SECTOR OPERATIVO</label>
+          <label class="flabel" for="f-sector" data-i18n="hero.lab2">SECTOR OPERATIVO</label>
           <select class="fselect" id="f-sector">
-            <option value="">— Selecciona el sector —</option>
+            <option value="" data-i18n="hero.ph2">— Selecciona el sector —</option>
             <option value="Seguridad y Protección">Seguridad y Protección</option>
             <option value="Banca y Servicios Financieros">Banca y Servicios Financieros</option>
             <option value="Retail y Distribución">Retail y Distribución</option>
@@ -1139,9 +1149,9 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
         </div>
 
         <div class="fgroup">
-          <label class="flabel" for="f-cargo">CARGO DE QUIEN SOLICITA EL DIAGNÓSTICO</label>
+          <label class="flabel" for="f-cargo" data-i18n="hero.lab3">CARGO DE QUIEN SOLICITA EL DIAGNÓSTICO</label>
           <select class="fselect" id="f-cargo">
-            <option value="">— Selecciona el cargo —</option>
+            <option value="" data-i18n="hero.ph3">— Selecciona el cargo —</option>
             <optgroup label="Alta Dirección">
               <option value="CEO / Director General">CEO / Director General</option>
               <option value="COO / Director de Operaciones">COO / Director de Operaciones</option>
@@ -1180,8 +1190,8 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
       </div><!-- /mission-card -->
 
       <div class="intake-actions">
-        <button class="btnp" onclick="validateAndGoToModules()"><span>INICIAR DIAGNÓSTICO →</span></button>
-        <div class="intake-note" id="intake-note-lbl">MÓDULO ADAPTATIVO · DIAGNÓSTICO IA · GUARDADO AUTOMÁTICO EN WORKSPACE</div>
+        <button class="btnp" onclick="validateAndGoToModules()"><span data-i18n="hero.btn">INICIAR DIAGNÓSTICO →</span></button>
+        <div class="intake-note" id="intake-note-lbl"></div>
       </div>
 
       <div class="install-hint" id="install-hint">
@@ -1198,41 +1208,41 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
   <!-- MODULE SELECTOR -->
   <div id="modsel" class="hidden">
     <div class="mod-sel">
-      <div style="text-align:left;margin-bottom:10px"><button class="btng" style="font-size:8px;padding:5px 12px" onclick="show('dashboard');dashNav('overview')">← COMMAND CENTER</button></div>
-      <div class="eyebrow">PLATAFORMA IRIS v4 · INTELIGENCIA DIAGNÓSTICA MULTIDIMENSIONAL</div>
+      <div style="text-align:left;margin-bottom:10px"><button class="btng" style="font-size:8px;padding:5px 12px" onclick="show('dashboard');dashNav('overview')" data-i18n="mod.back">← COMMAND CENTER</button></div>
+      <div class="eyebrow" data-i18n="mod.eye">PLATAFORMA IRIS v4 · INTELIGENCIA DIAGNÓSTICA MULTIDIMENSIONAL</div>
       <h2 class="htitle" style="font-size:clamp(22px,4vw,36px);margin-bottom:8px">
-        Selecciona el <span>Área de Riesgo</span>
+        <span data-i18n="mod.title">Selecciona el </span><span data-i18n="mod.title2">Área de Riesgo</span>
       </h2>
-      <p class="hsub" style="margin:10px auto 0;max-width:500px;font-size:10px">
+      <p class="hsub" style="margin:10px auto 0;max-width:500px;font-size:10px" data-i18n="mod.sub">
         IRIS analiza cuatro grandes dominios de vulnerabilidad organizacional. Selecciona el área que deseas diagnosticar. Los módulos habilitados dependen de tu plan de acceso.
       </p>
       <div class="mod-grid" id="mod-grid">
         <div class="mod-card seg" onclick="selectModule('SEG')" id="mc-SEG">
           <div class="mod-icon">🔐</div>
-          <div class="mod-name">SEGURIDAD INTEGRAL</div>
-          <div class="mod-desc">Seguridad física, operativa, ejecutiva, gestión de crisis, continuidad, control de accesos y resiliencia ante incidentes.</div>
-          <div class="mod-cnt">30 VECTORES · 4 PILARES</div>
+          <div class="mod-name" data-i18n="mod.SEG.name">SEGURIDAD INTEGRAL</div>
+          <div class="mod-desc" data-i18n="mod.SEG.desc">Seguridad física, operativa, ejecutiva, gestión de crisis, continuidad, control de accesos y resiliencia ante incidentes.</div>
+          <div class="mod-cnt"></div>
         </div>
         <div class="mod-card eco" onclick="selectModule('ECO')" id="mc-ECO">
           <div class="mod-icon">📊</div>
-          <div class="mod-name">RIESGOS ECONÓMICOS</div>
-          <div class="mod-desc">Dependencia financiera, resiliencia económica, exposición a crisis, concentración de ingresos y sostenibilidad operativa.</div>
-          <div class="mod-cnt">28 VECTORES · 4 PILARES</div>
+          <div class="mod-name" data-i18n="mod.ECO.name">RIESGOS ECONÓMICOS</div>
+          <div class="mod-desc" data-i18n="mod.ECO.desc">Dependencia financiera, resiliencia económica, exposición a crisis, concentración de ingresos y sostenibilidad operativa.</div>
+          <div class="mod-cnt"></div>
         </div>
         <div class="mod-card geo" onclick="selectModule('GEO')" id="mc-GEO">
           <div class="mod-icon">🌐</div>
-          <div class="mod-name">GEOPOLÍTICO Y REGULATORIO</div>
-          <div class="mod-desc">Exposición regulatoria, estabilidad política, dependencia gubernamental, amenazas estratégicas y riesgos institucionales.</div>
-          <div class="mod-cnt">26 VECTORES · 4 PILARES</div>
+          <div class="mod-name" data-i18n="mod.GEO.name">GEOPOLÍTICO Y REGULATORIO</div>
+          <div class="mod-desc" data-i18n="mod.GEO.desc">Exposición regulatoria, estabilidad política, dependencia gubernamental, amenazas estratégicas y riesgos institucionales.</div>
+          <div class="mod-cnt"></div>
         </div>
         <div class="mod-card org" onclick="selectModule('ORG')" id="mc-ORG">
           <div class="mod-icon">🧠</div>
-          <div class="mod-name">ORGANIZACIONAL Y HUMANO</div>
-          <div class="mod-desc">Liderazgo, resiliencia humana, cultura organizacional, toma de decisiones, puntos ciegos y desgaste estructural.</div>
-          <div class="mod-cnt">32 VECTORES · 4 PILARES</div>
+          <div class="mod-name" data-i18n="mod.ORG.name">ORGANIZACIONAL Y HUMANO</div>
+          <div class="mod-desc" data-i18n="mod.ORG.desc">Liderazgo, resiliencia humana, cultura organizacional, toma de decisiones, puntos ciegos y desgaste estructural.</div>
+          <div class="mod-cnt"></div>
         </div>
       </div>
-      <div class="mod-sel-note">
+      <div class="mod-sel-note" data-i18n-html="true" data-i18n="mod.note">
         <strong>MODO ENTERPRISE:</strong> acceso a los 4 módulos simultáneamente para diagnóstico multidimensional completo.<br>
         Tu plan actual determina los módulos habilitados. Contacta a BSC para ampliar acceso.
       </div>
@@ -1257,48 +1267,48 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
           <div style="margin-top:8px" id="dash-plan-badge"></div>
         </div>
         <nav class="dash-nav">
-          <div class="dash-nav-section">INTELIGENCIA</div>
+          <div class="dash-nav-section" data-i18n="dash.intel">INTELIGENCIA</div>
           <div class="dash-nav-item active" onclick="dashNav('overview')" id="nav-overview">
-            <span class="dash-nav-icon">◈</span>COMMAND CENTER
+            <span class="dash-nav-icon">◈</span><span data-i18n="dash.cmd">COMMAND CENTER</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('nuevo')" id="nav-nuevo">
-            <span class="dash-nav-icon">✦</span>NUEVO DIAGNÓSTICO
+            <span class="dash-nav-icon">✦</span><span data-i18n="dash.new">NUEVO DIAGNÓSTICO</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('historial')" id="nav-historial">
-            <span class="dash-nav-icon">◷</span>HISTORIAL
+            <span class="dash-nav-icon">◷</span><span data-i18n="dash.hist">HISTORIAL</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('alertas')" id="nav-alertas">
-            <span class="dash-nav-icon">⚑</span>ALERTAS ACTIVAS
+            <span class="dash-nav-icon">⚑</span><span data-i18n="dash.alert">ALERTAS ACTIVAS</span>
             <span class="dash-nav-badge" id="nav-alertas-badge" style="display:none"></span>
           </div>
-          <div class="dash-nav-section" style="margin-top:8px">ANÁLISIS</div>
+          <div class="dash-nav-section" style="margin-top:8px" data-i18n="dash.anal">ANÁLISIS</div>
           <div class="dash-nav-item" onclick="dashNav('tendencias')" id="nav-tendencias">
-            <span class="dash-nav-icon">∿</span>TENDENCIAS
+            <span class="dash-nav-icon">∿</span><span data-i18n="dash.tend">TENDENCIAS</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('benchmark')" id="nav-benchmark">
-            <span class="dash-nav-icon">⊞</span>BENCHMARK SECTORIAL
+            <span class="dash-nav-icon">⊞</span><span data-i18n="dash.bench">BENCHMARK SECTORIAL</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('reportes')" id="nav-reportes">
-            <span class="dash-nav-icon">▤</span>REPORTES PREMIUM
+            <span class="dash-nav-icon">▤</span><span data-i18n="dash.rpt">REPORTES PREMIUM</span>
           </div>
-          <div class="dash-nav-section" style="margin-top:8px">CONFIGURACIÓN</div>
+          <div class="dash-nav-section" style="margin-top:8px" data-i18n="dash.conf">CONFIGURACIÓN</div>
           <div class="dash-nav-item" onclick="dashNav('workspace')" id="nav-workspace">
-            <span class="dash-nav-icon">⊛</span>WORKSPACE
+            <span class="dash-nav-icon">⊛</span><span data-i18n="dash.ws">WORKSPACE</span>
           </div>
           <div class="dash-nav-item" onclick="dashNav('whitelabel')" id="nav-whitelabel">
-            <span class="dash-nav-icon">◎</span>WHITE LABEL
+            <span class="dash-nav-icon">◎</span><span data-i18n="dash.wl">WHITE LABEL</span>
           </div>
           <div class="dash-nav-item active-gold" onclick="show('admin');loadUsers()" id="nav-admin" style="display:none">
-            <span class="dash-nav-icon">⊕</span>ADMINISTRACIÓN
+            <span class="dash-nav-icon">⊕</span><span data-i18n="dash.admin">ADMINISTRACIÓN</span>
           </div>
         </nav>
         <div class="dash-bottom">
           <div class="dash-user-row" id="dash-user-row"></div>
           <div class="session-bar" id="session-bar">
             <div class="session-dot"></div>
-            <span id="session-info">SESIÓN ACTIVA</span>
+            <span id="session-info" data-i18n="dash.session">SESIÓN ACTIVA</span>
           </div>
-          <button class="btng" style="width:100%;margin-top:8px;font-size:8px" onclick="doLogout()">CERRAR SESIÓN</button>
+          <button class="btng" style="width:100%;margin-top:8px;font-size:8px" onclick="doLogout()" data-i18n="dash.logout">CERRAR SESIÓN</button>
         </div>
       </aside>
 
@@ -1306,12 +1316,12 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
       <main class="dash-main">
         <div class="dash-topbar">
           <div>
-            <div class="dash-page-title" id="dash-page-title">COMMAND CENTER</div>
-            <div class="dash-page-sub" id="dash-page-sub">IRIS v4 ENTERPRISE · SISTEMA DE INTELIGENCIA DE RIESGOS</div>
+            <div class="dash-page-title" id="dash-page-title" data-i18n="dash.cmd">COMMAND CENTER</div>
+            <div class="dash-page-sub" id="dash-page-sub" data-i18n="dash.pagesub">IRIS v4 ENTERPRISE · SISTEMA DE INTELIGENCIA DE RIESGOS</div>
           </div>
           <div class="dash-actions">
             <div class="session-bar"><div class="session-dot"></div><span id="dash-topbar-user">—</span></div>
-            <button class="btnp" onclick="dashNav('nuevo')" style="font-size:8px;padding:8px 18px"><span>+ NUEVO DIAGNÓSTICO</span></button>
+            <button class="btnp" onclick="dashNav('nuevo')" style="font-size:8px;padding:8px 18px"><span data-i18n="dash.new">+ NUEVO DIAGNÓSTICO</span></button>
           </div>
         </div>
         <div class="dash-content" id="dash-content">
@@ -1760,6 +1770,362 @@ function validateAndStart(){
   startAssessment();
 }
 
+// ─── I18N (ESPAÑOL / ENGLISH) ──────────────────────────────────────────────
+const LANG={
+  es:{
+    // Header
+    'hdr.title':'IRIS DIAGNOSTIC','hdr.sub':'STRATEGIC RISK INTELLIGENCE OS','hdr.v':'v4 ENTERPRISE','hdr.tag':'BSC · BURGOA SECURITY CONSULTANT',
+    // Login
+    'login.title':'IRIS Diagnostic System','login.sub':'INVISIBLE RISK INTELLIGENCE SYSTEM','login.box':'AUTENTICACIÓN REQUERIDA',
+    'login.email':'IDENTIFICADOR DE ACCESO','login.pass':'CLAVE DE ACCESO','login.btn':'INICIAR SESIÓN SEGURA →',
+    'login.sec':'ACCESO RESTRINGIDO · SISTEMA CERTIFICADO BSC',
+    'login.footer':'Burgoa Security Consultant · Andorra · España · Europa',
+    'login.log':'Este sistema registra todos los accesos y sesiones activas',
+    'login.err1':'Ingresa email y contraseña.','login.err2':u=>`Error de conexión con el servidor (${u}). Verifica tu conexión.`,
+    'login.err3':'Usuario no encontrado. Verifica tu email.','login.err4':'Contraseña incorrecta.',
+    'login.err5':'Cuenta desactivada. Contacta a BSC.','login.err6':'Licencia vencida. Contacta a BSC para renovar.',
+    'login.err7':u=>`Error: ${u||'No se pudo conectar. Verifica tu conexión a internet.'}`,
+    // Hero / Intake
+    'hero.eye':'SISTEMA DE INTELIGENCIA DE RIESGOS · BSC','hero.title':'Diagnostic System',
+    'hero.sub':m=>`${m}. Registra los datos de tu organización para iniciar el diagnóstico adaptativo.`,
+    'hero.back':'← COMMAND CENTER','hero.ar':'ÁREAS DE RIESGO','hero.vi':'VECTORES IRIS','hero.ent':'ENTERPRISE',
+    'hero.card':'REGISTRO DE MISIÓN · DATOS DEL DIAGNÓSTICO','hero.conf':'CONFIDENCIAL',
+    'hero.lab1':'ENTIDAD OBJETIVO DEL ANÁLISIS','hero.lab2':'SECTOR OPERATIVO','hero.lab3':'CARGO DE QUIEN SOLICITA EL DIAGNÓSTICO',
+    'hero.ph1':'Nombre de la empresa u organización','hero.ph2':'— Selecciona el sector —','hero.ph3':'— Selecciona el cargo —',
+    'hero.err':'Campo requerido','hero.btn':'INICIAR DIAGNÓSTICO →',
+    'hero.note':m=>`${m} VECTORES ADAPTATIVOS · 15-20 MIN · INFORME DE INTELIGENCIA GENERADO POR IA`,
+    // Module selector
+    'mod.back':'← COMMAND CENTER','mod.eye':'PLATAFORMA IRIS v4 · INTELIGENCIA DIAGNÓSTICA MULTIDIMENSIONAL',
+    'mod.title':'Selecciona el ','mod.title2':'Área de Riesgo',
+    'mod.sub':'IRIS analiza cuatro grandes dominios de vulnerabilidad organizacional. Selecciona el área que deseas diagnosticar. Los módulos habilitados dependen de tu plan de acceso.',
+    'mod.ent':'MODO ENTERPRISE:','mod.ent2':'acceso a los 4 módulos simultáneamente para diagnóstico multidimensional completo. Tu plan actual determina los módulos habilitados. Contacta a BSC para ampliar acceso.',
+    'mod.note':'<strong>MODO ENTERPRISE:</strong> acceso a los 4 módulos simultáneamente para diagnóstico multidimensional completo.<br>Tu plan actual determina los módulos habilitados. Contacta a BSC para ampliar acceso.',
+    // Assessment
+    'as.title':'EVALUACIÓN IRIS','as.done':'COMPLETADO','as.pils':'PILARES ACTIVOS',
+    'as.feed':'ANÁLISIS ADAPTATIVO EN CURSO','as.init':m=>`Sistema inicializado · ${m}`,
+    'as.scale':'ESCALA ANALÍTICA','as.binary':'EVALUACIÓN BINARIA','as.scenario':'ANÁLISIS DE ESCENARIO','as.open':'ENTRADA NARRATIVA',
+    'as.signal':'SEÑAL ACTIVA · ANÁLISIS EN CURSO','as.min':'MÍNIMO','as.max':'MÁXIMO',
+    'as.sel':'SELECCIONA EL ESCENARIO QUE MEJOR DESCRIBE TU REALIDAD OPERATIVA',
+    'as.openlbl':'ENTRADA LIBRE · EL SISTEMA ANALIZA PATRONES NARRATIVOS',
+    'as.opph':'Describe la situación con el nivel de detalle que consideres relevante. El sistema detectará patrones invisibles en tu respuesta...',
+    'as.yes':'CONFIRMADO','as.no':'NEGADO','as.back':'← RETROCEDER','as.next':'CONTINUAR ANÁLISIS ▸','as.run':'EJECUTAR ANÁLISIS IRIS ▸',
+    'as.proc':(a,t)=>`${a}/${t} PROCESADAS`,
+    // Generating
+    'gen.title':'IRIS v4 ENTERPRISE · ANÁLISIS EN EJECUCIÓN','gen.sub':'PROCESANDO PATRONES DE RIESGO INVISIBLE — IRIS v4 ENTERPRISE',
+    'gen.init':'Inicializando motor de diagnóstico...','gen.prog':'PROGRESO DEL ANÁLISIS',
+    'gen.s1':'Vectorizando respuestas y calculando índice IRIS','gen.s2':'Detectando contradicciones y sesgos cognitivos',
+    'gen.s3':'Mapeando vulnerabilidades por dominio operativo','gen.s4':'Identificando escenarios de fallo potenciales',
+    'gen.s5':'Generando briefing de inteligencia estratégica',
+    'gen.t1':'Aplicando modelo de scoring multicapa...','gen.t2':'Analizando patrones de normalización del riesgo...',
+    'gen.t3':'Procesando puntos ciegos organizacionales...','gen.t4':'Correlacionando señales preincidente...',
+    'gen.t5':'Calibrando recomendaciones tácticas...','gen.t6':'Compilando informe de inteligencia estratégica...',
+    'gen.done':'Briefing IRIS completado.',
+    // Report
+    'rpt.crit':'VULNERABILIDAD CRÍTICA DETECTADA','rpt.high':'VULNERABILIDAD ALTA','rpt.mod':'RIESGO MODERADO','rpt.strat':'MADUREZ ESTRATÉGICA',
+    'rpt.conf':'CONFIDENCIAL · BSC IRIS DIAGNOSTIC SYSTEM','rpt.brief':'BRIEFING DE INTELIGENCIA ESTRATÉGICA',
+    'rpt.sub':'BSC · BURGOA SECURITY CONSULTANT · MÉTODO IRIS',
+    'rpt.emp':'EMPRESA / ORGANIZACIÓN','rpt.sec':'SECTOR','rpt.cargo':'CARGO SOLICITANTE',
+    'rpt.iris':'ÍNDICE IRIS','rpt.tag1':'MÉTODO IRIS','rpt.tag2':'4 DOMINIOS ANALIZADOS', 'rpt.tag3':n=>`${n} VECTORES`,
+    'rpt.cont':n=>`${n} CONTRADICCIÓN/ES DETECTADA/S`,
+    'rpt.l1t':'RIESGO CRÍTICO','rpt.l1d':'Múltiples vulnerabilidades estructurales activas. El sistema requiere intervención inmediata.',
+    'rpt.l2t':'VULNERABILIDAD ALTA','rpt.l2d':'Fallos significativos en al menos dos pilares. El riesgo invisible opera activamente.',
+    'rpt.l3t':'RIESGO MODERADO','rpt.l3d':'Capacidades parciales con brechas específicas. El sistema tiene puntos de quiebre predecibles.',
+    'rpt.l4t':'MADUREZ ESTRATÉGICA','rpt.l4d':'Sistema sólido de inteligencia preventiva. Continuar refinamiento de capacidades.',
+    'rpt.s1':'01 · EVALUACIÓN EJECUTIVA','rpt.s1s':'Análisis del Patrón Sistémico',
+    'rpt.s2':'02 · VULNERABILIDADES DETECTADAS','rpt.s2s':'Mapa de Exposición Crítica',
+    'rpt.s3':'03 · ANÁLISIS POR DOMINIO IRIS','rpt.s3s':'Diagnóstico Operativo Detallado',
+    'rpt.s4':'04 · ESCENARIOS DE FALLO','rpt.s4s':'Proyecciones de Riesgo Sistémico',
+    'rpt.s5':'04/05 · RECOMENDACIONES TÁCTICAS','rpt.s5s':'Plan de Acción Prioritizado',
+    'rpt.s6':'05/06 · PLAN DE IMPLEMENTACIÓN IRIS','rpt.s6s':'Protocolo de Ejecución — 16 Semanas',
+    'rpt.contop':'CONTINUIDAD OPERATIVA','rpt.eco':'Ecosistema IRIS · BSC',
+    'rpt.strg':'FORTALEZAS','rpt.deb':'DEBILIDADES','rpt.ries':'RIESGOS ACTIVOS','rpt.pc':'PUNTO CIEGO',
+    'rpt.inm':'INMEDIATO','rpt.mid':'MEDIANO PLAZO','rpt.long':'LARGO PLAZO',
+    'rpt.alerta':'ALERTA CRÍTICA · INTERVENCIÓN PRIORITARIA REQUERIDA',
+    'rpt.alertad':'El análisis ha detectado vulnerabilidades estructurales activas en múltiples dominios. Se recomienda iniciar protocolo IRIS en 72h.',
+    'rpt.extt':'DIAGNÓSTICO EXTENDIDO','rpt.extd':'Sesión de 2h para profundizar hallazgos y diseñar plan personalizado.',
+    'rpt.const':'CONSULTORÍA ESTRATÉGICA','rpt.consd':'Implementación asistida del sistema IRIS con transferencia de capacidades.',
+    'rpt.train':'FORMACIÓN EJECUTIVA','rpt.traind':'Programa de 4 módulos basado en los pilares IRIS para equipos directivos.',
+    'rpt.pdf':'EXPORTAR PDF →','rpt.db':'← DASHBOARD','rpt.new':'NUEVO DIAGNÓSTICO',
+    // Dashboard
+    'dash.intel':'INTELIGENCIA','dash.anal':'ANÁLISIS','dash.conf':'CONFIGURACIÓN',
+    'dash.cmd':'COMMAND CENTER','dash.new':'NUEVO DIAGNÓSTICO','dash.hist':'HISTORIAL','dash.alert':'ALERTAS ACTIVAS',
+    'dash.tend':'TENDENCIAS','dash.bench':'BENCHMARK SECTORIAL','dash.rpt':'REPORTES PREMIUM',
+    'dash.ws':'WORKSPACE','dash.wl':'WHITE LABEL','dash.admin':'ADMINISTRACIÓN',
+    'dash.session':'SESIÓN ACTIVA','dash.logout':'CERRAR SESIÓN','dash.salir':'SALIR','dash.adminbadge':'ADMIN',
+    'dash.pagesub':'IRIS v4 ENTERPRISE · SISTEMA DE INTELIGENCIA DE RIESGOS','dash.overview':'IRIS v4 ENTERPRISE · MODO ACTIVO','dash.op':'OPERACIONAL',
+    'dash.kpi1':'DIAGNÓSTICOS TOTALES','dash.kpi1s':'EN ESTE WORKSPACE','dash.kpi2':'ÚLTIMO ÍNDICE IRIS',
+    'dash.kpi2s':'SIN DIAGNÓSTICOS','dash.kpi3':'ALERTAS CRÍTICAS','dash.kpi4':'PROMEDIO HISTÓRICO','dash.kpi4s':'ÍNDICE IRIS GLOBAL',
+    'dash.alertas':'ALERTAS ACTIVAS · REQUIEREN ATENCIÓN','dash.all':'VER TODAS →','dash.recent':'DIAGNÓSTICOS RECIENTES',
+    'dash.seeall':'VER HISTORIAL →','dash.empty':'Sin diagnósticos aún.','dash.empty2':'Inicia tu primer análisis.',
+    'dash.fecha':'FECHA','dash.mod':'MÓDULO','dash.emp':'EMPRESA','dash.idx':'ÍNDICE','dash.acc':'ACCIONES',
+    'dash.dist':'DISTRIBUCIÓN POR MÓDULO','dash.nodata':'Sin datos aún','dash.quick':'ACCIONES RÁPIDAS','dash.go':'INICIAR →',
+    // Admin
+    'admin.title':'Panel de Administración','admin.sub':'GESTIÓN DE USUARIOS · IRIS DIAGNOSTIC SYSTEM',
+    'admin.users':'USUARIOS','admin.add':'AGREGAR USUARIO','admin.new':'NUEVO USUARIO',
+    'admin.nombre':'NOMBRE','admin.email':'EMAIL','admin.pass':'CONTRASEÑA','admin.emp':'EMPRESA','admin.plan':'PLAN / ACCESO',
+    'admin.exp':'VENCIMIENTO (opcional)','admin.ph1':'Nombre completo','admin.ph2':'email@empresa.com','admin.ph3':'Contraseña inicial','admin.ph4':'Empresa del cliente',
+    'admin.std':'Standard (SEG)','admin.prem':'Premium (SEG+ECO)','admin.ent':'Enterprise (4 módulos)','admin.adm':'Admin',
+    'admin.db':'← DASHBOARD','admin.nd':'NUEVO DIAGNÓSTICO','admin.create':'CREAR USUARIO →','admin.load':'Cargando usuarios...',
+    'admin.errload':'Error al cargar usuarios.','admin.errdata':'Email y contraseña son requeridos.','admin.creating':'Creando usuario...',
+    'admin.created':u=>`✓ Usuario ${u} creado correctamente.`,'admin.dup':'Este email ya existe.',
+    'admin.elim':'ELIMINAR','admin.des':'DESACTIVAR','admin.act':'ACTIVAR','admin.sl':'Sin límite','admin.estado':'ESTADO',
+    'admin.confdel':u=>`¿Eliminar usuario ${u}? Esta acción no se puede deshacer.`,
+    // Errors
+    'err.unknown':u=>`Error: ${u}`,
+    // Contradictions
+    'cont.c1':'Alta consciencia situacional pero alta distorsión por experiencia',
+    'cont.c2':'Información fluye bien pero accesos no verificados formalmente',
+    'cont.c3':'Protocolos diseñados para presión pero nunca simulados bajo presión',
+    'cont.c4':'Proceso post-incidente formal pero capacidades de respuesta no construidas',
+    'cont.c5':'Confianza en ausencia de incidentes pero historial de crisis no anticipadas',
+    // Alert engine
+    'alert.crit':(e,m,g)=>`Vulnerabilidad crítica detectada en ${e} · Módulo ${m} · Índice ${g}/100`,
+    'alert.high':(e,m,g)=>`Exposición alta en ${e} · ${m} · Índice ${g}/100 — Requiere atención`,
+    'alert.deg':(m,e,d)=>`Degradación sistémica en ${m} · ${e} · -${d} pts vs anterior`,
+    // Section labels (dashboard pages)
+    'sec.bench':'BENCHMARK SECTORIAL','sec.rpts':'REPORTES PREMIUM — IRIS v4 ENTERPRISE',
+    'sec.ws':'GESTIÓN DE WORKSPACE','sec.wl':'WHITE LABEL — PERSONALIZACIÓN DE MARCA',
+    // PDF
+    'pdf.title':'EXPORTAR BRIEFING — IRIS v4 ENTERPRISE','pdf.preview':'BRIEFING DE INTELIGENCIA ESTRATÉGICA',
+    'pdf.ejec':'📋 EXECUTIVE BRIEFING','pdf.ejecd':'Resumen ejecutivo + vulnerabilidades críticas + recomendaciones · 4-6 páginas',
+    'pdf.comp':'📑 INFORME COMPLETO','pdf.compd':'Análisis exhaustivo todos los dominios + roadmap 16 semanas · 12-18 páginas',
+    'pdf.tact':'⚡ BRIEFING TÁCTICO','pdf.tactd':'Solo hallazgos críticos + acciones inmediatas · 2 páginas',
+    'pdf.gen':'GENERAR Y DESCARGAR BRIEFING →','pdf.no':()=>'No hay diagnóstico disponible para exportar. Completa un diagnóstico primero.',
+    // New diagnosis
+    'new.title':'NUEVO DIAGNÓSTICO ADAPTATIVO','new.sub':'Selecciona el área de riesgo a analizar. El sistema generará preguntas adaptadas al sector.',
+    'new.vec':n=>`${n} VECTORES ADAPTATIVOS`,'new.note':'Todos los diagnósticos quedan registrados en el historial del workspace.',
+    // History
+    'hist.title':n=>`REGISTRO LONGITUDINAL · ${n} DIAGNÓSTICO(S)`,'hist.csv':'EXPORTAR CSV →',
+    'hist.empty':'Sin diagnósticos registrados','hist.empty2':'Inicia tu primer diagnóstico para construir el historial longitudinal.',
+    'hist.empty3':'INICIAR PRIMER DIAGNÓSTICO →','hist.del':()=>'¿Eliminar este diagnóstico del historial?',
+    'hist.ver':'VER','hist.pdf':'PDF','hist.delbtn':'✕',
+    // Benchmarks
+    'bench.sub':s=>`Comparativa de tus índices IRIS frente a referentes del sector${s}.`,
+    'bench.title':'COMPARATIVA DE ÍNDICES IRIS · ORGANIZACIÓN vs SECTOR',
+    'bench.org':'TU ORGANIZACIÓN','bench.ref':'REFERENTE SECTORIAL',
+    'bench.si':'Seguridad Integral','bench.re':'Riesgos Económicos','bench.gr':'Geopolítico/Regulatorio','bench.oh':'Organizacional y Humano',
+    // Workspace
+    'ws.title':'WORKSPACES ACTIVOS','ws.new':'+ NUEVO','ws.act':'ACTIVO','ws.save':'GUARDAR CAMBIOS →','ws.del':'ELIMINAR WORKSPACE',
+    'ws.confdel':()=>'¿Eliminar este workspace y todos sus datos?','ws.saved':'Configuración guardada.',
+    'ws.nodel':()=>'No puedes eliminar el único workspace.','ws.prompt':()=>'Nombre del nuevo workspace / organización:',
+    'ws.newws':'+ NUEVO WORKSPACE','ws.org':'NOMBRE DE LA ORGANIZACIÓN','ws.sec':'SECTOR PRINCIPAL',
+    // White label
+    'wl.title':'CONFIGURACIÓN DE MARCA','wl.org':'NOMBRE DE LA ORGANIZACIÓN / FIRMA','wl.color':'COLOR PRIMARIO (accent)',
+    'wl.gold':'COLOR GOLD / HIGHLIGHT','wl.apply':'APLICAR CAMBIOS →','wl.reset':'RESTAURAR DEFECTO',
+    'wl.applied':'Cambios de marca aplicados.','wl.hint':'Color de acento principal · por defecto: #38BDF8 (cyan)',
+    'wl.goldhint':'Color de énfasis y titulares · por defecto: #C8A84B (gold)',
+    'wl.preview':'IRIS DIAGNOSTIC SYSTEM','wl.mod':'SEGURIDAD INTEGRAL','wl.modact':'MÓDULO ACTIVO',
+    // AI config
+    'ai.title':'CONFIGURACIÓN DE IA','ai.prot':'✓ API KEY PROTEGIDA EN SERVIDOR',
+    'ai.desc':'IRIS usa inteligencia artificial (API key en servidor) para generar análisis estratégicos. La key no se expone al navegador.',
+    // Fallback
+    'fb.lvl':(g,l)=>`El análisis revela un índice IRIS de ${g}/100 con nivel de exposición ${l}.`,
+    'fb.focus':(n,s)=>`El dominio ${n} presenta el déficit estructural más significativo (${s}/100).`,
+    'fb.reactive':'Los patrones de respuesta revelan una tendencia sistémica hacia la reactividad operativa y la normalización progresiva del riesgo.',
+    'fb.cont':c=>`Se han identificado ${c} contradicción(es) entre respuestas que indican exceso de confianza o puntos ciegos no percibidos.`,
+    'fb.nocont':'No se detectaron contradicciones manifiestas, aunque la consistencia puede indicar normalización avanzada del riesgo.',
+    'fb.gap':'La distancia entre los sistemas declarados y la práctica operativa real constituye el vector de vulnerabilidad central.',
+    'fb.vaughan':'Las brechas son consistentes con el modelo de normalización del desvío. La intervención prioritaria debe dirigirse al dominio',
+    // Module meta translations
+    'mod.SEG.name':'🔐 SEGURIDAD INTEGRAL','mod.SEG.desc':'Seguridad física, operativa, ejecutiva, gestión de crisis, continuidad y control de accesos.',
+    'mod.ECO.name':'📊 RIESGOS ECONÓMICOS','mod.ECO.desc':'Dependencia financiera, resiliencia económica, exposición a crisis y concentración de ingresos.',
+    'mod.GEO.name':'🌐 GEOPOLÍTICO Y REGULATORIO','mod.GEO.desc':'Exposición regulatoria, estabilidad política, dependencia gubernamental y amenazas estratégicas.',
+    'mod.ORG.name':'🧠 ORGANIZACIONAL Y HUMANO','mod.ORG.desc':'Liderazgo, resiliencia humana, cultura organizacional, puntos ciegos y desgaste estructural.',
+    'mod.SEG.ms':'Seguridad Integral','mod.ECO.ms':'Riesgos Económicos','mod.GEO.ms':'Geopolítico / Regulatorio','mod.ORG.ms':'Organizacional y Humano',
+    // Feed messages (short list)
+    'feed.m1':'Evaluando sistemas de detección temprana...','feed.m2':'Analizando madurez de protocolos de seguridad...',
+    'feed.m3':'Procesando capacidad de respuesta operativa...','feed.m4':'Analizando flujo de información de seguridad...',
+    'feed.m5':'Evaluando diseño de protocolos bajo presión...','feed.m6':'Evaluando capacidad anticipatoria de amenazas...',
+    'feed.m7':'Analizando inteligencia preventiva...','feed.m8':'Procesando resiliencia sistémica...',
+  },
+  en:{
+    // Header
+    'hdr.title':'IRIS DIAGNOSTIC','hdr.sub':'STRATEGIC RISK INTELLIGENCE OS','hdr.v':'v4 ENTERPRISE','hdr.tag':'BSC · BURGOA SECURITY CONSULTANT',
+    // Login
+    'login.title':'IRIS Diagnostic System','login.sub':'INVISIBLE RISK INTELLIGENCE SYSTEM','login.box':'AUTHENTICATION REQUIRED',
+    'login.email':'ACCESS IDENTIFIER','login.pass':'ACCESS KEY','login.btn':'SECURE LOGIN →',
+    'login.sec':'RESTRICTED ACCESS · BSC CERTIFIED SYSTEM',
+    'login.footer':'Burgoa Security Consultant · Andorra · Spain · Europe',
+    'login.log':'This system records all access and active sessions',
+    'login.err1':'Enter email and password.', 'login.err2':u=>`Connection error (${u}). Check your connection.`,
+    'login.err3':'User not found. Check your email.', 'login.err4':'Incorrect password.',
+    'login.err5':'Account deactivated. Contact BSC.', 'login.err6':'License expired. Contact BSC to renew.',
+    'login.err7':u=>`Error: ${u||'Could not connect. Check your internet connection.'}`,
+    // Hero / Intake
+    'hero.eye':'RISK INTELLIGENCE SYSTEM · BSC','hero.title':'Diagnostic System',
+    'hero.sub':m=>`${m}. Enter your organization data to start the adaptive diagnostic.`,
+    'hero.back':'← COMMAND CENTER','hero.ar':'RISK AREAS','hero.vi':'IRIS VECTORS','hero.ent':'ENTERPRISE',
+    'hero.card':'MISSION RECORD · DIAGNOSTIC DATA','hero.conf':'CONFIDENTIAL',
+    'hero.lab1':'TARGET ENTITY FOR ANALYSIS','hero.lab2':'OPERATIONAL SECTOR','hero.lab3':'POSITION OF REQUESTER',
+    'hero.ph1':'Company or organization name','hero.ph2':'— Select sector —','hero.ph3':'— Select position —',
+    'hero.err':'Required field','hero.btn':'START DIAGNOSTIC →',
+    'hero.note':m=>`${m} ADAPTIVE VECTORS · 15-20 MIN · AI-GENERATED INTELLIGENCE REPORT`,
+    // Module selector
+    'mod.back':'← COMMAND CENTER','mod.eye':'IRIS v4 PLATFORM · MULTIDIMENSIONAL DIAGNOSTIC INTELLIGENCE',
+    'mod.title':'Select the ','mod.title2':'Risk Area',
+    'mod.sub':'IRIS analyzes four major domains of organizational vulnerability. Select the area you wish to diagnose. Available modules depend on your access plan.',
+    'mod.ent':'ENTERPRISE MODE:','mod.ent2':'access to all 4 modules simultaneously for complete multidimensional diagnosis. Your current plan determines enabled modules. Contact BSC to upgrade.',
+    'mod.note':'<strong>ENTERPRISE MODE:</strong> access to all 4 modules for complete multidimensional diagnosis.<br>Your plan determines enabled modules. Contact BSC to upgrade.',
+    // Assessment
+    'as.title':'IRIS ASSESSMENT','as.done':'COMPLETED','as.pils':'ACTIVE PILLARS',
+    'as.feed':'ADAPTIVE ANALYSIS IN PROGRESS','as.init':m=>`System initialized · ${m}`,
+    'as.scale':'ANALYTIC SCALE','as.binary':'BINARY ASSESSMENT','as.scenario':'SCENARIO ANALYSIS','as.open':'NARRATIVE INPUT',
+    'as.signal':'ACTIVE SIGNAL · ANALYSIS IN PROGRESS','as.min':'MINIMUM','as.max':'MAXIMUM',
+    'as.sel':'SELECT THE SCENARIO THAT BEST DESCRIBES YOUR OPERATIONAL REALITY',
+    'as.openlbl':'FREE INPUT · THE SYSTEM ANALYZES NARRATIVE PATTERNS',
+    'as.opph':'Describe the situation with as much detail as you consider relevant. The system will detect invisible patterns in your response...',
+    'as.yes':'CONFIRMED','as.no':'DENIED','as.back':'← GO BACK','as.next':'CONTINUE ANALYSIS ▸','as.run':'RUN IRIS ANALYSIS ▸',
+    'as.proc':(a,t)=>`${a}/${t} PROCESSED`,
+    // Generating
+    'gen.title':'IRIS v4 ENTERPRISE · ANALYSIS RUNNING','gen.sub':'PROCESSING INVISIBLE RISK PATTERNS — IRIS v4 ENTERPRISE',
+    'gen.init':'Initializing diagnostic engine...','gen.prog':'ANALYSIS PROGRESS',
+    'gen.s1':'Vectorizing responses and calculating IRIS index','gen.s2':'Detecting contradictions and cognitive biases',
+    'gen.s3':'Mapping vulnerabilities by operational domain','gen.s4':'Identifying potential failure scenarios',
+    'gen.s5':'Generating strategic intelligence briefing',
+    'gen.t1':'Applying multi-layer scoring model...','gen.t2':'Analyzing risk normalization patterns...',
+    'gen.t3':'Processing organizational blind spots...','gen.t4':'Correlating pre-incident signals...',
+    'gen.t5':'Calibrating tactical recommendations...','gen.t6':'Compiling strategic intelligence report...',
+    'gen.done':'IRIS Briefing complete.',
+    // Report
+    'rpt.crit':'CRITICAL VULNERABILITY DETECTED','rpt.high':'HIGH VULNERABILITY','rpt.mod':'MODERATE RISK','rpt.strat':'STRATEGIC MATURITY',
+    'rpt.conf':'CONFIDENTIAL · BSC IRIS DIAGNOSTIC SYSTEM','rpt.brief':'STRATEGIC INTELLIGENCE BRIEFING',
+    'rpt.sub':'BSC · BURGOA SECURITY CONSULTANT · IRIS METHOD',
+    'rpt.emp':'COMPANY / ORGANIZATION','rpt.sec':'SECTOR','rpt.cargo':'REQUESTER POSITION',
+    'rpt.iris':'IRIS INDEX','rpt.tag1':'IRIS METHOD','rpt.tag2':'4 DOMAINS ANALYZED','rpt.tag3':n=>`${n} VECTORS`,
+    'rpt.cont':n=>`${n} CONTRADICTION(S) DETECTED`,
+    'rpt.l1t':'CRITICAL RISK','rpt.l1d':'Multiple active structural vulnerabilities. The system requires immediate intervention.',
+    'rpt.l2t':'HIGH VULNERABILITY','rpt.l2d':'Significant failures in at least two pillars. Invisible risk is actively operating.',
+    'rpt.l3t':'MODERATE RISK','rpt.l3d':'Partial capabilities with specific identifiable gaps. System has predictable breaking points.',
+    'rpt.l4t':'STRATEGIC MATURITY','rpt.l4d':'Solid preventive intelligence system. Continue refining capabilities.',
+    'rpt.s1':'01 · EXECUTIVE ASSESSMENT','rpt.s1s':'Systemic Pattern Analysis',
+    'rpt.s2':'02 · VULNERABILITIES DETECTED','rpt.s2s':'Critical Exposure Map',
+    'rpt.s3':'03 · IRIS DOMAIN ANALYSIS','rpt.s3s':'Detailed Operational Diagnostic',
+    'rpt.s4':'04 · FAILURE SCENARIOS','rpt.s4s':'Systemic Risk Projections',
+    'rpt.s5':'04/05 · TACTICAL RECOMMENDATIONS','rpt.s5s':'Prioritized Action Plan',
+    'rpt.s6':'05/06 · IRIS IMPLEMENTATION PLAN','rpt.s6s':'Execution Protocol — 16 Weeks',
+    'rpt.contop':'OPERATIONAL CONTINUITY','rpt.eco':'IRIS Ecosystem · BSC',
+    'rpt.strg':'STRENGTHS','rpt.deb':'WEAKNESSES','rpt.ries':'ACTIVE RISKS','rpt.pc':'BLIND SPOT',
+    'rpt.inm':'IMMEDIATE','rpt.mid':'MEDIUM TERM','rpt.long':'LONG TERM',
+    'rpt.alerta':'CRITICAL ALERT · PRIORITY INTERVENTION REQUIRED',
+    'rpt.alertad':'The analysis has detected active structural vulnerabilities in multiple domains. IRIS protocol should be initiated within 72h.',
+    'rpt.extt':'EXTENDED DIAGNOSTIC','rpt.extd':'2h session to deepen findings and design a customized implementation plan.',
+    'rpt.const':'STRATEGIC CONSULTING','rpt.consd':'Assisted IRIS system implementation with capability transfer.',
+    'rpt.train':'EXECUTIVE TRAINING','rpt.traind':'4-module program based on IRIS pillars for leadership teams.',
+    'rpt.pdf':'EXPORT PDF →','rpt.db':'← DASHBOARD','rpt.new':'NEW DIAGNOSTIC',
+    // Dashboard
+    'dash.intel':'INTELLIGENCE','dash.anal':'ANALYSIS','dash.conf':'SETTINGS',
+    'dash.cmd':'COMMAND CENTER','dash.new':'NEW DIAGNOSTIC','dash.hist':'HISTORY','dash.alert':'ACTIVE ALERTS',
+    'dash.tend':'TRENDS','dash.bench':'SECTOR BENCHMARK','dash.rpt':'PREMIUM REPORTS',
+    'dash.ws':'WORKSPACE','dash.wl':'WHITE LABEL','dash.admin':'ADMIN',
+    'dash.session':'ACTIVE SESSION','dash.logout':'LOG OUT','dash.salir':'EXIT','dash.adminbadge':'ADMIN',
+    'dash.pagesub':'IRIS v4 ENTERPRISE · RISK INTELLIGENCE SYSTEM','dash.overview':'IRIS v4 ENTERPRISE · ACTIVE MODE','dash.op':'OPERATIONAL',
+    'dash.kpi1':'TOTAL DIAGNOSTICS','dash.kpi1s':'IN THIS WORKSPACE','dash.kpi2':'LAST IRIS INDEX',
+    'dash.kpi2s':'NO DIAGNOSTICS','dash.kpi3':'CRITICAL ALERTS','dash.kpi4':'HISTORICAL AVERAGE','dash.kpi4s':'GLOBAL IRIS INDEX',
+    'dash.alertas':'ACTIVE ALERTS · NEED ATTENTION','dash.all':'VIEW ALL →','dash.recent':'RECENT DIAGNOSTICS',
+    'dash.seeall':'VIEW HISTORY →','dash.empty':'No diagnostics yet.','dash.empty2':'Start your first analysis.',
+    'dash.fecha':'DATE','dash.mod':'MODULE','dash.emp':'COMPANY','dash.idx':'INDEX','dash.acc':'ACTIONS',
+    'dash.dist':'DISTRIBUTION BY MODULE','dash.nodata':'No data yet','dash.quick':'QUICK ACTIONS','dash.go':'START →',
+    // Admin
+    'admin.title':'Administration Panel','admin.sub':'USER MANAGEMENT · IRIS DIAGNOSTIC SYSTEM',
+    'admin.users':'USERS','admin.add':'ADD USER','admin.new':'NEW USER',
+    'admin.nombre':'NAME','admin.email':'EMAIL','admin.pass':'PASSWORD','admin.emp':'COMPANY','admin.plan':'PLAN / ACCESS',
+    'admin.exp':'EXPIRY (optional)','admin.ph1':'Full name','admin.ph2':'email@company.com','admin.ph3':'Initial password','admin.ph4':'Client company',
+    'admin.std':'Standard (SEG)','admin.prem':'Premium (SEG+ECO)','admin.ent':'Enterprise (4 modules)','admin.adm':'Admin',
+    'admin.db':'← DASHBOARD','admin.nd':'NEW DIAGNOSTIC','admin.create':'CREATE USER →','admin.load':'Loading users...',
+    'admin.errload':'Error loading users.','admin.errdata':'Email and password are required.','admin.creating':'Creating user...',
+    'admin.created':u=>`✓ User ${u} created successfully.`,'admin.dup':'This email already exists.',
+    'admin.elim':'DELETE','admin.des':'DEACTIVATE','admin.act':'ACTIVATE','admin.sl':'No limit','admin.estado':'STATUS',
+    'admin.confdel':u=>`Delete user ${u}? This action cannot be undone.`,
+    // Errors
+    'err.unknown':u=>`Error: ${u}`,
+    // Contradictions
+    'cont.c1':'High situational awareness but high experience-based distortion',
+    'cont.c2':'Information flows well but access not formally verified',
+    'cont.c3':'Protocols designed for pressure but never simulated under pressure',
+    'cont.c4':'Formal post-incident process but response capabilities not built',
+    'cont.c5':'Confidence in absence of incidents but history of unanticipated crises',
+    // Alert engine
+    'alert.crit':(e,m,g)=>`Critical vulnerability detected in ${e} · Module ${m} · Index ${g}/100`,
+    'alert.high':(e,m,g)=>`High exposure in ${e} · ${m} · Index ${g}/100 — Needs attention`,
+    'alert.deg':(m,e,d)=>`Systemic degradation in ${m} · ${e} · -${d} pts vs previous`,
+    // Section labels
+    'sec.bench':'SECTOR BENCHMARK','sec.rpts':'PREMIUM REPORTS — IRIS v4 ENTERPRISE',
+    'sec.ws':'WORKSPACE MANAGEMENT','sec.wl':'WHITE LABEL — BRAND CUSTOMIZATION',
+    // PDF
+    'pdf.title':'EXPORT BRIEFING — IRIS v4 ENTERPRISE','pdf.preview':'STRATEGIC INTELLIGENCE BRIEFING',
+    'pdf.ejec':'📋 EXECUTIVE BRIEFING','pdf.ejecd':'Executive summary + critical vulnerabilities + recommendations · 4-6 pages',
+    'pdf.comp':'📑 FULL REPORT','pdf.compd':'Comprehensive analysis all domains + 16-week roadmap · 12-18 pages',
+    'pdf.tact':'⚡ TACTICAL BRIEFING','pdf.tactd':'Critical findings only + immediate actions · 2 pages',
+    'pdf.gen':'GENERATE AND DOWNLOAD BRIEFING →','pdf.no':()=>'No diagnostic available for export. Complete a diagnostic first.',
+    // New diagnosis
+    'new.title':'NEW ADAPTIVE DIAGNOSTIC','new.sub':'Select the risk area to analyze. The system will generate questions adapted to your sector.',
+    'new.vec':n=>`${n} ADAPTIVE VECTORS`,'new.note':'All diagnostics are recorded in the workspace history.',
+    // History
+    'hist.title':n=>`LONGITUDINAL RECORD · ${n} DIAGNOSTIC(S)`,'hist.csv':'EXPORT CSV →',
+    'hist.empty':'No diagnostics recorded','hist.empty2':'Start your first diagnostic to build the longitudinal history.',
+    'hist.empty3':'START FIRST DIAGNOSTIC →','hist.del':()=>'Delete this diagnostic from history?',
+    'hist.ver':'VIEW','hist.pdf':'PDF','hist.delbtn':'✕',
+    // Benchmarks
+    'bench.sub':s=>`Comparison of your IRIS indexes against sector references${s}.`,
+    'bench.title':'IRIS INDEX COMPARISON · ORGANIZATION vs SECTOR',
+    'bench.org':'YOUR ORGANIZATION','bench.ref':'SECTOR REFERENCE',
+    'bench.si':'Integral Security','bench.re':'Economic Risks','bench.gr':'Geopolitical/Regulatory','bench.oh':'Organizational & Human',
+    // Workspace
+    'ws.title':'ACTIVE WORKSPACES','ws.new':'+ NEW','ws.act':'ACTIVE','ws.save':'SAVE CHANGES →','ws.del':'DELETE WORKSPACE',
+    'ws.confdel':()=>'Delete this workspace and all its data?','ws.saved':'Settings saved.',
+    'ws.nodel':()=>'You cannot delete the only workspace.','ws.prompt':()=>'Name of the new workspace / organization:',
+    'ws.newws':'+ NEW WORKSPACE','ws.org':'ORGANIZATION NAME','ws.sec':'MAIN SECTOR',
+    // White label
+    'wl.title':'BRAND SETTINGS','wl.org':'ORGANIZATION / FIRM NAME','wl.color':'PRIMARY COLOR (accent)',
+    'wl.gold':'GOLD / HIGHLIGHT COLOR','wl.apply':'APPLY CHANGES →','wl.reset':'RESTORE DEFAULT',
+    'wl.applied':'Brand changes applied.','wl.hint':'Main accent color · default: #38BDF8 (cyan)',
+    'wl.goldhint':'Emphasis and headline color · default: #C8A84B (gold)',
+    'wl.preview':'IRIS DIAGNOSTIC SYSTEM','wl.mod':'INTEGRAL SECURITY','wl.modact':'ACTIVE MODULE',
+    // AI config
+    'ai.title':'AI CONFIGURATION','ai.prot':'✓ API KEY PROTECTED ON SERVER',
+    'ai.desc':'IRIS uses AI (server-side API key) to generate strategic analysis. The key is not exposed to the browser.',
+    // Fallback
+    'fb.lvl':(g,l)=>`The analysis reveals an IRIS index of ${g}/100 with exposure level ${l}.`,
+    'fb.focus':(n,s)=>`Domain ${n} shows the most significant structural deficit (${s}/100).`,
+    'fb.reactive':'Response patterns reveal a systemic tendency toward operational reactivity and progressive risk normalization.',
+    'fb.cont':c=>`${c} contradiction(s) identified between responses indicating overconfidence or unperceived blind spots.`,
+    'fb.nocont':'No manifest contradictions detected, although consistency may indicate advanced risk normalization.',
+    'fb.gap':'The distance between declared systems and actual operational practice constitutes the central vulnerability vector.',
+    'fb.vaughan':'The gaps are consistent with the normalization of deviance model. Priority intervention should target',
+    // Module meta
+    'mod.SEG.name':'🔐 INTEGRAL SECURITY','mod.SEG.desc':'Physical, operational, executive security, crisis management, continuity and access control.',
+    'mod.ECO.name':'📊 ECONOMIC RISKS','mod.ECO.desc':'Financial dependence, economic resilience, crisis exposure and revenue concentration.',
+    'mod.GEO.name':'🌐 GEOPOLITICAL & REGULATORY','mod.GEO.desc':'Regulatory exposure, political stability, government dependence and strategic threats.',
+    'mod.ORG.name':'🧠 ORGANIZATIONAL & HUMAN','mod.ORG.desc':'Leadership, human resilience, organizational culture, blind spots and structural attrition.',
+    'mod.SEG.ms':'Integral Security','mod.ECO.ms':'Economic Risks','mod.GEO.ms':'Geopolitical / Regulatory','mod.ORG.ms':'Organizational & Human',
+    // Feed messages
+    'feed.m1':'Evaluating early detection systems...','feed.m2':'Analyzing security protocol maturity...',
+    'feed.m3':'Processing operational response capacity...','feed.m4':'Analyzing security information flow...',
+    'feed.m5':'Evaluating protocol design under pressure...','feed.m6':'Evaluating threat anticipation capacity...',
+    'feed.m7':'Analyzing preventive intelligence...','feed.m8':'Processing systemic resilience...',
+  }
+};
+let currentLang=localStorage.getItem('iris_lang')||'es';
+function t(key,...args){
+  const msg=LANG[currentLang]?.[key];
+  if(typeof msg==='function')return msg(...args);
+  return msg||LANG.es[key]||key;
+}
+function setLang(code){
+  currentLang=code;
+  localStorage.setItem('iris_lang',code);
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k=el.getAttribute('data-i18n');
+    if(k.startsWith('.')){el.style.display=t(k);return;}
+    const val=t(k);
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT'){el.placeholder=val;return;}
+    if(el.getAttribute('data-i18n-html')){el.innerHTML=val;return;}
+    el.textContent=val;
+  });
+  document.getElementById('lang-es')?.classList.toggle('active',code==='es');
+  document.getElementById('lang-en')?.classList.toggle('active',code==='en');
+}
+
 // ─── ALERTA SONORA (Web Audio API, sin archivos) ─────────────────────────────
 function playAlert(){
   try{
@@ -1829,7 +2195,7 @@ async function doLogin() {
   errEl.textContent = '';
   errEl.classList.remove('show');
   if (!email || !pass) { 
-    errEl.textContent = 'Ingresa email y contraseña.'; 
+    errEl.textContent = t('login.err1');
     errEl.classList.add('show');
     return; 
   }
@@ -1841,13 +2207,13 @@ async function doLogin() {
     const res = await sbFetch(`usuarios?email=eq.${encodeURIComponent(email)}&select=*`);
     
     if (!res.ok) {
-      errEl.textContent = 'Error de conexión con el servidor (' + res.status + '). Verifica tu conexión.';
+      errEl.textContent = t('login.err2',res.status);
       errEl.classList.add('show');
       btn.style.display = 'inline-block'; spin.style.display = 'none'; return;
     }
     
     if (!res.data || res.data.length === 0) {
-      errEl.textContent = 'Usuario no encontrado. Verifica tu email.';
+      errEl.textContent = t('login.err3');
       errEl.classList.add('show');
       btn.style.display = 'inline-block'; spin.style.display = 'none'; return;
     }
@@ -1855,17 +2221,17 @@ async function doLogin() {
     const user = res.data[0];
     
     if (user.password !== pass) {
-      errEl.textContent = 'Contraseña incorrecta.';
+      errEl.textContent = t('login.err4');
       errEl.classList.add('show');
       btn.style.display = 'inline-block'; spin.style.display = 'none'; return;
     }
     if (!user.activo) {
-      errEl.textContent = 'Cuenta desactivada. Contacta a BSC.';
+      errEl.textContent = t('login.err5');
       errEl.classList.add('show');
       btn.style.display = 'inline-block'; spin.style.display = 'none'; return;
     }
     if (user.fecha_vencimiento && new Date(user.fecha_vencimiento) < new Date()) {
-      errEl.textContent = 'Licencia vencida. Contacta a BSC para renovar.';
+      errEl.textContent = t('login.err6');
       errEl.classList.add('show');
       btn.style.display = 'inline-block'; spin.style.display = 'none'; return;
     }
@@ -2108,15 +2474,15 @@ function renderQ(){
         <div class="bolbl">${o.t}</div>
       </div>`).join('')}</div>`;
   }else if(q.t==='scenario'){
-    inp=`<div style="font-size:8px;color:var(--txt3);letter-spacing:.18em;margin-bottom:10px">SELECCIONA EL ESCENARIO QUE MEJOR DESCRIBE TU REALIDAD OPERATIVA</div>
+    inp=`<div style="font-size:8px;color:var(--txt3);letter-spacing:.18em;margin-bottom:10px">${t('as.sel')}</div>
     <div class="scenopts">${q.op.map((o,i)=>`
       <div class="sopt${answers[q.id]===o.k?' sel':''}" onclick="ansQ('${o.k}')">
         <span class="skey">${o.k}</span>
         <span class="stxt">${o.t}</span>
       </div>`).join('')}</div>`;
   }else if(q.t==='open'){
-    inp=`<div style="font-size:8px;color:var(--txt3);letter-spacing:.15em;margin-bottom:8px">ENTRADA LIBRE · EL SISTEMA ANALIZA PATRONES NARRATIVOS</div>
-    <textarea class="tinput" id="oi" placeholder="Describe la situación con el nivel de detalle que consideres relevante. El sistema detectará patrones invisibles en tu respuesta..." oninput="openVal=this.value">${answers[q.id]||''}</textarea>`;
+    inp=`<div style="font-size:8px;color:var(--txt3);letter-spacing:.15em;margin-bottom:8px">${t('as.openlbl')}</div>
+    <textarea class="tinput" id="oi" placeholder="${t('as.opph')}" oninput="openVal=this.value">${answers[q.id]||''}</textarea>`;
   }
 
   // Update live feed in sidebar
@@ -2134,7 +2500,7 @@ function renderQ(){
     <div class="qhdr">
       <div class="domain-bar ${q.pi}">
         <div>
-          <div class="domain-label">${pillar?.name||q.pi} · MÓDULO DE INTELIGENCIA ${q.pi}</div>
+          <div class="domain-label">${pillar?.name||q.pi} · ${q.pi}</div>
         </div>
         <div class="domain-status">
           <div class="live-dot"></div>
@@ -2145,7 +2511,7 @@ function renderQ(){
         <div class="signal-bar active">
           <span></span><span></span><span></span><span></span>
         </div>
-        <span class="signal-txt">SEÑAL ACTIVA · ANÁLISIS EN CURSO</span>
+          <span class="signal-txt" data-i18n="as.signal">SEÑAL ACTIVA · ANÁLISIS EN CURSO</span>
         <span class="qseq">${_queueIndex+1} / ${_qs.length}</span>
       </div>
     </div>
@@ -2155,11 +2521,11 @@ function renderQ(){
     </div>
     ${inp}
     <div class="qnav">
-      ${_queueIndex>0?`<button class="btng" onclick="prevQ()">← RETROCEDER</button>`:''}
+      ${_queueIndex>0?`<button class="btng" onclick="prevQ()">${t('as.back')}</button>`:''}
       <button class="btnp" id="nb" onclick="${last?'tryGen()':'nextQ()'}" ${!canGo(q)?'disabled':''}">
-        <span>${last?'EJECUTAR ANÁLISIS IRIS ▸':'CONTINUAR ANÁLISIS ▸'}</span>
+        <span>${last?t('as.run'):t('as.next')}</span>
       </button>
-      <span class="qhint">${Object.keys(answers).length}/${_qs.length} PROCESADAS</span>
+      <span class="qhint">${t('as.proc',Object.keys(answers).length,_qs.length)}</span>
     </div>`;
 }
 
@@ -2189,10 +2555,10 @@ function calcScores(){
 }
 
 function getLvl(s){
-  if(s<=25)return{cls:'critical',lbl:'RIESGO CRÍTICO',desc:'Múltiples vulnerabilidades estructurales activas. El sistema tiene fallos en los cuatro pilares que requieren intervención inmediata.'};
-  if(s<=50)return{cls:'high',lbl:'VULNERABILIDAD ALTA',desc:'Fallos significativos en al menos dos pilares. El riesgo invisible opera activamente en la organización.'};
-  if(s<=75)return{cls:'moderate',lbl:'RIESGO MODERADO',desc:'Capacidades parciales con brechas específicas identificables. El sistema funciona pero tiene puntos de quiebre predecibles.'};
-  return{cls:'strategic',lbl:'MADUREZ ESTRATÉGICA',desc:'Sistema sólido de inteligencia preventiva. Continuar con refinamiento y profundización de capacidades.'};
+  if(s<=25)return{cls:'critical',lbl:t('rpt.l1t'),desc:t('rpt.l1d')};
+  if(s<=50)return{cls:'high',lbl:t('rpt.l2t'),desc:t('rpt.l2d')};
+  if(s<=75)return{cls:'moderate',lbl:t('rpt.l3t'),desc:t('rpt.l3d')};
+  return{cls:'strategic',lbl:t('rpt.l4t'),desc:t('rpt.l4d')};
 }
 
 async function doGenerate(){
@@ -2203,11 +2569,11 @@ async function doGenerate(){
   const scores=calcScores();
 
   const STEPS=[
-    {lbl:'Vectorizando respuestas y calculando índice IRIS',ticker:'Aplicando modelo de scoring multicapa...'},
-    {lbl:'Detectando contradicciones y sesgos cognitivos',ticker:'Analizando patrones de normalización del riesgo...'},
-    {lbl:'Mapeando vulnerabilidades por dominio operativo',ticker:'Procesando puntos ciegos organizacionales...'},
-    {lbl:'Identificando escenarios de fallo potenciales',ticker:'Correlacionando señales preincidente...'},
-    {lbl:'Generando briefing de inteligencia estratégica',ticker:'Calibrando recomendaciones tácticas...'},
+    {lbl:t('gen.s1'),ticker:t('gen.t1')},
+    {lbl:t('gen.s2'),ticker:t('gen.t2')},
+    {lbl:t('gen.s3'),ticker:t('gen.t3')},
+    {lbl:t('gen.s4'),ticker:t('gen.t4')},
+    {lbl:t('gen.s5'),ticker:t('gen.t5')},
   ];
 
   document.getElementById('gsteps').innerHTML=STEPS.map((s,i)=>`
@@ -2248,11 +2614,11 @@ async function doGenerate(){
   }
 
   setBar(88);
-  setTicker('Compilando informe de inteligencia estratégica...');
+  setTicker(t('gen.t6'));
   let rpt;
   try{rpt=await callAI(scores);}catch(e){rpt=fallback(scores);}
   setBar(100);
-  setTicker('Briefing IRIS completado.');
+  setTicker(t('gen.done'));
   await new Promise(r=>setTimeout(r,600));
   renderReport(scores,rpt);
 }
@@ -2313,15 +2679,15 @@ Genera SOLO JSON válido, sin markdown:
 function detectContradictions(){
   const c=[];
   const p3=answers['p3'],p5=answers['p5'];
-  if(p3&&p5&&parseInt(p3)>=4&&parseInt(p5)>=4)c.push('Alta consciencia situacional pero alta distorsión por experiencia');
+  if(p3&&p5&&parseInt(p3)>=4&&parseInt(p5)>=4)c.push(t('cont.c1'));
   const e1=answers['e1'],e3=answers['e3'];
-  if(e1&&e3&&parseInt(e1)>=4&&e3==='NO')c.push('Información fluye bien pero accesos no verificados formalmente');
+  if(e1&&e3&&parseInt(e1)>=4&&e3==='NO')c.push(t('cont.c2'));
   const d1=answers['d1'],d2=answers['d2'];
-  if(d1&&d2&&(d1==='D')&&parseInt(d2)<=2)c.push('Protocolos diseñados para presión pero nunca simulados bajo presión');
+  if(d1&&d2&&(d1==='D')&&parseInt(d2)<=2)c.push(t('cont.c3'));
   const a2=answers['a2'],a3=answers['a3'];
-  if(a2&&a3&&a2==='SI'&&(a3==='A'||a3==='B'))c.push('Proceso post-incidente formal pero capacidades de respuesta no construidas');
+  if(a2&&a3&&a2==='SI'&&(a3==='A'||a3==='B'))c.push(t('cont.c4'));
   const p7=answers['p7'],e8=answers['e8'];
-  if(p7&&e8&&(p7==='A'||p7==='B')&&e8==='SI')c.push('Confianza en ausencia de incidentes pero historial de crisis no anticipadas');
+  if(p7&&e8&&(p7==='A'||p7==='B')&&e8==='SI')c.push(t('cont.c5'));
   return c;
 }
 
@@ -2373,7 +2739,7 @@ function renderReport(scores,rpt){
 
   const lv=getLvl(scores.global);
   const rc={PERCEIVE:'var(--pp)',EXPOSE:'var(--ep)',DESIGN:'var(--dp)',ANTICIPATE:'var(--ap)',Diagnóstico:'var(--txt2)'};
-  const classifyLabel={critical:'VULNERABILIDAD CRÍTICA DETECTADA',high:'VULNERABILIDAD ALTA',moderate:'RIESGO MODERADO',strategic:'MADUREZ ESTRATÉGICA'};
+  const classifyLabel={critical:t('rpt.crit'),high:t('rpt.high'),moderate:t('rpt.mod'),strategic:t('rpt.strat')};
 
   let pAnal='';
   PILLARS.forEach(p=>{
@@ -2393,14 +2759,14 @@ function renderReport(scores,rpt){
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
-        ${[['FORTALEZAS',d.fortalezas,'var(--grn)'],['DEBILIDADES',d.debilidades,'var(--amb)'],['RIESGOS ACTIVOS',d.riesgos,'var(--red)']].map(([l,t,c],i)=>`
+        ${[[t('rpt.strg'),d.fortalezas,'var(--grn)'],[t('rpt.deb'),d.debilidades,'var(--amb)'],[t('rpt.ries'),d.riesgos,'var(--red)']].map(([l,t,c],i)=>`
           <div style="padding:12px 14px;border-right:${i<2?'1px solid var(--brd)':'none'};border-bottom:${d.puntoCiego?'1px solid var(--brd)':'none'}">
             <div style="font-size:7px;color:${c};letter-spacing:.15em;margin-bottom:6px;font-weight:700">${l}</div>
             <div style="font-size:10px;color:var(--txt2);line-height:1.55">${t||'—'}</div>
           </div>`).join('')}
       </div>
       ${d.puntoCiego?`<div style="padding:12px 14px;background:rgba(200,168,75,.04);display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:8px;letter-spacing:.15em;color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px">PUNTO CIEGO</span>
+        <span style="font-size:8px;letter-spacing:.15em;color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px">${t('rpt.pc')}</span>
         <span style="font-size:10px;color:var(--txt2);line-height:1.55">${d.puntoCiego}</span>
       </div>`:''}
     </div>`;
@@ -2409,8 +2775,8 @@ function renderReport(scores,rpt){
   let failScenarios='';
   if(rpt.escenariosDeFallo?.length){
     failScenarios=`<div class="rsec">
-      <div class="slbl">04 · ESCENARIOS DE FALLO</div>
-      <div class="stitle2">Proyecciones de Riesgo Sistémico</div>
+      <div class="slbl">${t('rpt.s4')}</div>
+      <div class="stitle2">${t('rpt.s4s')}</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         ${rpt.escenariosDeFallo.map(s=>{
           const pc=s.probabilidad==='alta'?'var(--red)':s.probabilidad==='media'?'var(--amb)':'var(--cyan)';
@@ -2430,8 +2796,8 @@ function renderReport(scores,rpt){
 
   const alert=scores.global<=40?`<div class="nalert">
     <div class="aico">⚠</div>
-    <div class="atxt"><strong>ALERTA CRÍTICA · INTERVENCIÓN PRIORITARIA REQUERIDA</strong><br>
-    El análisis ha detectado vulnerabilidades estructurales activas en múltiples dominios. El riesgo invisible opera en modo acelerado. Se recomienda iniciar el protocolo de implementación IRIS en las próximas 72 horas.</div>
+    <div class="atxt">    <strong>${t('rpt.alerta')}</strong><br>
+    ${t('rpt.alertad')}</div>
   </div>`:'';
 
   // AUTO-SAVE diagnostic to workspace history
@@ -2443,33 +2809,33 @@ function renderReport(scores,rpt){
   
   document.getElementById('report').innerHTML=`
   <div class="rpt">
-    <div class="rpt-classification ${lv.cls}">${classifyLabel[lv.cls]||lv.cls.toUpperCase()} · CONFIDENCIAL · BSC IRIS DIAGNOSTIC SYSTEM</div>
+    <div class="rpt-classification ${lv.cls}">${classifyLabel[lv.cls]||lv.cls.toUpperCase()} · ${t('rpt.conf')}</div>
     <div class="rhdr">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
         <img src="${LOGO_SM}" alt="IRIS" style="width:44px;height:44px;object-fit:contain;flex-shrink:0">
         <div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="area-badge" style="color:${modMeta.color};border-color:${modMeta.color}">${modMeta.icon} ${modMeta.name}</span></div>
-          <div class="reye">BRIEFING DE INTELIGENCIA ESTRATÉGICA · ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase()}</div>
+          <div class="reye">${t('rpt.brief')} · ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase()}</div>
           <h1 class="rtitle">Sistema IRIS · <span>Riesgo Invisible</span></h1>
-          <div class="rmeta">BSC · BURGOA SECURITY CONSULTANT · MÉTODO IRIS v3 · ${modMeta.name}</div>
+          <div class="rmeta">${t('rpt.sub')} v3 · ${modMeta.name}</div>
         </div>
       </div>
       <div class="client-card">
-        <div class="client-field"><div class="client-label">EMPRESA / ORGANIZACIÓN</div><div class="client-value">${clientData.empresa||'—'}</div></div>
-        <div class="client-field"><div class="client-label">SECTOR</div><div class="client-value">${clientData.sector||'—'}</div></div>
-        <div class="client-field"><div class="client-label">CARGO SOLICITANTE</div><div class="client-value">${clientData.cargo||'—'}</div></div>
+        <div class="client-field"><div class="client-label">${t('rpt.emp')}</div><div class="client-value">${clientData.empresa||'—'}</div></div>
+        <div class="client-field"><div class="client-label">${t('rpt.sec')}</div><div class="client-value">${clientData.sector||'—'}</div></div>
+        <div class="client-field"><div class="client-label">${t('rpt.cargo')}</div><div class="client-value">${clientData.cargo||'—'}</div></div>
       </div>
       <div class="score-master">
         <div class="score-gauge ${lv.cls}">
           <div class="snum">${scores.global}</div>
-          <div class="slsm">ÍNDICE IRIS</div>
+          <div class="slsm">${t('rpt.iris')}</div>
         </div>
         <div class="score-right">
           <div class="slvl">${lv.lbl}</div>
           <div class="sdesc">${lv.desc}</div>
           <div class="score-tags">
-            <span class="score-tag">MÉTODO IRIS</span>
-            <span class="score-tag">4 DOMINIOS ANALIZADOS</span>
+            <span class="score-tag">${t('rpt.tag1')}</span>
+            <span class="score-tag">${t('rpt.tag2')}</span>
             <span class="score-tag">${getQS().length} VECTORES</span>
             ${detectContradictions().length>0?`<span class="score-tag" style="color:var(--amb);border-color:var(--amb)">${detectContradictions().length} CONTRADICCIÓN${detectContradictions().length>1?'ES':''} DETECTADA${detectContradictions().length>1?'S':''}</span>`:''}
           </div>
@@ -2490,14 +2856,14 @@ function renderReport(scores,rpt){
     ${alert}
 
     <div class="rsec">
-      <div class="slbl">01 · EVALUACIÓN EJECUTIVA</div>
-      <div class="stitle2">Análisis del Patrón Sistémico</div>
+      <div class="slbl">${t('rpt.s1')}</div>
+      <div class="stitle2">${t('rpt.s1s')}</div>
       <div class="narr">${(rpt.resumenEjecutivo||'').split('\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('')}</div>
     </div>
 
     <div class="rsec">
-      <div class="slbl">02 · VULNERABILIDADES DETECTADAS</div>
-      <div class="stitle2">Mapa de Exposición Crítica</div>
+      <div class="slbl">${t('rpt.s2')}</div>
+      <div class="stitle2">${t('rpt.s2s')}</div>
       <div class="findings">
         ${(rpt.hallazgosCriticos||[]).map(f=>`
         <div class="finding ${f.nivel}">
@@ -2511,20 +2877,20 @@ function renderReport(scores,rpt){
     </div>
 
     <div class="rsec">
-      <div class="slbl">03 · ANÁLISIS POR DOMINIO IRIS</div>
-      <div class="stitle2">Diagnóstico Operativo Detallado</div>
+      <div class="slbl">${t('rpt.s3')}</div>
+      <div class="stitle2">${t('rpt.s3s')}</div>
       ${pAnal}
     </div>
 
     ${failScenarios}
 
     <div class="rsec">
-      <div class="slbl">${rpt.escenariosDeFallo?.length?'05':'04'} · RECOMENDACIONES TÁCTICAS</div>
-      <div class="stitle2">Plan de Acción Prioritizado</div>
+      <div class="slbl">${rpt.escenariosDeFallo?.length?'05 · RECOMENDACIONES TÁCTICAS':'04 · RECOMENDACIONES TÁCTICAS'}</div>
+      <div class="stitle2">${t('rpt.s5s')}</div>
       <div class="recs">
         ${(rpt.recomendaciones||[]).map(r=>`
         <div class="rec">
-          <div class="rphase ${r.fase||'mid'}">${r.fase==='short'?'INMEDIATO':r.fase==='long'?'LARGO PLAZO':'MEDIANO PLAZO'}</div>
+          <div class="rphase ${r.fase||'mid'}">${r.fase==='short'?t('rpt.inm'):r.fase==='long'?t('rpt.long'):t('rpt.mid')}</div>
           <div class="rcont">
             ${r.pilar?`<div style="font-size:7px;letter-spacing:.15em;margin-bottom:4px" class="psname ${r.pilar.toLowerCase()}">${PILLARS.find(p=>p.id===r.pilar)?.name||r.pilar}</div>`:''}
             <div class="rtit">${r.titulo}</div>
@@ -2535,8 +2901,8 @@ function renderReport(scores,rpt){
     </div>
 
     <div class="rsec">
-      <div class="slbl">${rpt.escenariosDeFallo?.length?'06':'05'} · PLAN DE IMPLEMENTACIÓN IRIS</div>
-      <div class="stitle2">Protocolo de Ejecución — 16 Semanas</div>
+      <div class="slbl">${rpt.escenariosDeFallo?.length?'06 · PLAN DE IMPLEMENTACIÓN IRIS':'05 · PLAN DE IMPLEMENTACIÓN IRIS'}</div>
+      <div class="stitle2">${t('rpt.s6s')}</div>
       <div class="roadmap">
         ${(rpt.roadmap||[]).map(w=>`
         <div class="rwk">
@@ -2552,13 +2918,13 @@ function renderReport(scores,rpt){
     </div>
 
     <div class="rsec" style="border-bottom:none">
-      <div class="slbl">CONTINUIDAD OPERATIVA</div>
-      <div class="stitle2">Ecosistema IRIS · BSC</div>
+      <div class="slbl">${t('rpt.contop')}</div>
+      <div class="stitle2">${t('rpt.eco')}</div>
       <div class="cta-box">
         <div class="cta-grid">
-          <div><div class="cta-ttl">DIAGNÓSTICO EXTENDIDO</div><div class="cta-dsc">Sesión de 2h para profundizar hallazgos y diseñar plan personalizado de implementación IRIS.</div></div>
-          <div><div class="cta-ttl">CONSULTORÍA ESTRATÉGICA</div><div class="cta-dsc">Implementación asistida del sistema IRIS en entorno corporativo con transferencia de capacidades.</div></div>
-          <div><div class="cta-ttl">FORMACIÓN EJECUTIVA</div><div class="cta-dsc">Programa de 4 módulos basado en los pilares IRIS para equipos directivos y responsables de seguridad.</div></div>
+          <div><div class="cta-ttl">${t('rpt.extt')}</div><div class="cta-dsc">${t('rpt.extd')}</div></div>
+          <div><div class="cta-ttl">${t('rpt.const')}</div><div class="cta-dsc">${t('rpt.consd')}</div></div>
+          <div><div class="cta-ttl">${t('rpt.train')}</div><div class="cta-dsc">${t('rpt.traind')}</div></div>
         </div>
         <div class="cta-meta">
           <span class="cta-m">BSC · BURGOA SECURITY CONSULTANT</span>
@@ -2569,9 +2935,9 @@ function renderReport(scores,rpt){
     </div>
 
     <div class="racts2">
-      <button class="btnp" onclick="openPdfModal(null)"><span>EXPORTAR PDF →</span></button>
-      <button class="btng" onclick="backToDashboard()">← DASHBOARD</button>
-      <button class="btng" onclick="resetAll()">NUEVO DIAGNÓSTICO</button>
+      <button class="btnp" onclick="openPdfModal(null)"><span>${t('rpt.pdf')}</span></button>
+      <button class="btng" onclick="backToDashboard()">${t('rpt.db')}</button>
+      <button class="btng" onclick="resetAll()">${t('rpt.new')}</button>
     </div>
   </div>`;
 }
@@ -3565,12 +3931,13 @@ function resetAll(){
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
+  setLang(currentLang);
   applyStoredWhiteLabel();
   // Update session clock
   setInterval(() => {
     const si = document.getElementById('session-info');
-    if (si && si.textContent.startsWith('SESIÓN')) {
-      si.textContent = 'SESIÓN · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    if (si && si.textContent) {
+      si.textContent = t('dash.session') + ' · ' + new Date().toLocaleTimeString(currentLang==='en'?'en-US':'es-ES',{hour:'2-digit',minute:'2-digit'});
     }
   }, 60000);
   const imgs=[['hdr-logo',false],['hero-logo',true],['gen-logo',true],['login-logo-img',true]];
