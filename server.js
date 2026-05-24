@@ -5,7 +5,16 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+// ─── Health check ───────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, anthropic: !!process.env.ANTHROPIC_KEY, supabase: !!process.env.SB_URL });
+});
+
 // ─── Proxy: Anthropic ──────────────────────────────────
+app.post('/api/anthropic/messages', async (req, res) => {
+  if (!process.env.ANTHROPIC_KEY) {
+    return res.status(400).json({ error: { message: 'ANTHROPIC_KEY no configurada en el servidor' } });
+  }
 app.post('/api/anthropic/messages', async (req, res) => {
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
