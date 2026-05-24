@@ -53,7 +53,11 @@ app.all('/api/supabase/*', async (req, res) => {
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
     });
     const text = await resp.text();
-    res.status(resp.status).set(resp.headers).send(text);
+    const safeHeaders = {};
+    for (const [k, v] of resp.headers) {
+      if (['content-type','content-range','cache-control','etag'].includes(k)) safeHeaders[k] = v;
+    }
+    res.status(resp.status).set(safeHeaders).send(text);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
