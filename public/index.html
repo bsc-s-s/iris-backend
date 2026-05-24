@@ -2073,7 +2073,7 @@ function renderQ(){
   if(!q)return;
   openVal=answers[q.id]||'';
   updateSidebar();
-  const last=Object.keys(answers).length>=_qs.length;
+  const last=_qs.every(q=>answers[q.id]);
   const pillar=PILLARS.find(p=>p.id===q.pi);
   const _feedBag=(FEED_MSGS_V3[activeModule]||FEED_MSGS);const feedMsgs=(_feedBag[q.pi]||FEED_MSGS[q.pi])||[];
   const feedTxt=feedMsgs[Math.floor(Math.random()*feedMsgs.length)]||'Procesando datos...';
@@ -2155,7 +2155,7 @@ function canGo(q){if(!q)return false;if(q.t==='open')return(openVal&&openVal.len
 
 function ansQ(v){const q=getQS().find(x=>x.id===_adaptiveQueue[_queueIndex]);if(q)answers[q.id]=v;renderQ()}
 
-function nextQ(){const _qs=getQS();const q=_qs.find(x=>x.id===_adaptiveQueue[_queueIndex]);if(q&&q.t==='open'&&openVal)answers[q.id]=openVal;if(_queueIndex+1>=_adaptiveQueue.length)_extendAdaptiveQueue();if(_queueIndex+1<_adaptiveQueue.length){_queueIndex++;openVal='';renderQ()}}
+function nextQ(){const _qs=getQS();if(_qs.every(q=>answers[q.id]))return tryGen();const q=_qs.find(x=>x.id===_adaptiveQueue[_queueIndex]);if(q&&q.t==='open'&&openVal)answers[q.id]=openVal;if(_queueIndex+1>=_adaptiveQueue.length)_extendAdaptiveQueue();if(_queueIndex+1<_adaptiveQueue.length){_queueIndex++;openVal='';renderQ()}}
 
 function prevQ(){if(_queueIndex>0){_queueIndex--;openVal='';renderQ()}}
 
