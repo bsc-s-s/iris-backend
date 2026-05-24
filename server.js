@@ -7,30 +7,35 @@ app.use(express.static('public'));
 
 // ─── Health check ───────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, gemini: !!process.env.GEMINI_KEY, supabase: !!process.env.SB_URL });
+  res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL });
 });
 
-// ─── Proxy: Gemini (formato compatible con Anthropic) ──
+// ─── Proxy: Groq (formato compatible con Anthropic) ────
 app.post('/api/anthropic/messages', async (req, res) => {
-  const key = process.env.GEMINI_KEY;
+  const key = process.env.GROQ_KEY;
   if (!key) {
-    return res.status(400).json({ error: { message: 'GEMINI_KEY no configurada en el servidor' } });
+    return res.status(400).json({ error: { message: 'GROQ_KEY no configurada en el servidor' } });
   }
   try {
-    const prompt = req.body.messages?.[0]?.content || '';
-    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
+    const model = req.body.model === 'claude-sonnet-4-20250514' ? 'llama-3.3-70b-versatile' : (req.body.model || 'llama-3.3-70b-versatile');
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': 'Bearer ' + key,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.7 }
+        model,
+        messages: req.body.messages || [],
+        max_tokens: req.body.max_tokens || 2000,
+        temperature: 0.7
       })
     });
-    const gemini = await resp.json();
+    const groq = await resp.json();
     if (!resp.ok) {
-      return res.status(resp.status).json({ error: { message: gemini.error?.message || 'Gemini API error' } });
+      return res.status(resp.status).json({ error: { message: groq.error?.message || 'Groq API error' } });
     }
-    const text = gemini.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const text = groq.choices?.[0]?.message?.content || '{}';
     res.json({ content: [{ type: 'text', text }] });
   } catch (e) {
     res.status(500).json({ error: { message: e.message } });
