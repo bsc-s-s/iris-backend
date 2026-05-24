@@ -7,26 +7,31 @@ app.use(express.static('public'));
 
 // ─── Health check ───────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, anthropic: !!process.env.ANTHROPIC_KEY, supabase: !!process.env.SB_URL });
+  res.json({ ok: true, gemini: !!process.env.GEMINI_KEY, supabase: !!process.env.SB_URL });
 });
 
-// ─── Proxy: Anthropic ──────────────────────────────────
+// ─── Proxy: Gemini (formato compatible con Anthropic) ──
 app.post('/api/anthropic/messages', async (req, res) => {
-  if (!process.env.ANTHROPIC_KEY) {
-    return res.status(400).json({ error: { message: 'ANTHROPIC_KEY no configurada en el servidor' } });
+  const key = process.env.GEMINI_KEY;
+  if (!key) {
+    return res.status(400).json({ error: { message: 'GEMINI_KEY no configurada en el servidor' } });
   }
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const prompt = req.body.messages?.[0]?.content || '';
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify(req.body)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 2000, temperature: 0.7 }
+      })
     });
-    const data = await resp.json();
-    res.status(resp.status).json(data);
+    const gemini = await resp.json();
+    if (!resp.ok) {
+      return res.status(resp.status).json({ error: { message: gemini.error?.message || 'Gemini API error' } });
+    }
+    const text = gemini.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    res.json({ content: [{ type: 'text', text }] });
   } catch (e) {
     res.status(500).json({ error: { message: e.message } });
   }

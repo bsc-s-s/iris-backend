@@ -3432,7 +3432,7 @@ function renderWhiteLabel() {
       <div class="dash-panel-body">
         <div style="margin-bottom:12px"><span style="color:var(--grn);font-size:9px">✓ API KEY PROTEGIDA EN SERVIDOR</span></div>
         <div style="font-size:10px;color:var(--txt2);line-height:1.6;margin-bottom:14px">
-          IRIS usa la API de Anthropic para generar análisis de inteligencia estratégica.<br>
+          IRIS usa Google Gemini (IA gratuita) para generar análisis de inteligencia estratégica.<br>
           La API key está configurada en el servidor (archivo <code>.env</code>).<br>
           No se expone al navegador ni al usuario final.
         </div>
@@ -3582,21 +3582,19 @@ DESCRIPCIÓN
 Este archivo HTML es la versión funcional completa de IRIS v4 Enterprise.
 Corre directamente en cualquier navegador sin necesidad de servidor.
 Incluye el motor IRIS completo, 4 módulos de diagnóstico, integración
-con IA de Anthropic, dashboard, historial, alertas y exportación PDF.
+con IA (Gemini), dashboard, historial, alertas y exportación PDF.
 
 CÓMO USAR (USUARIO FINAL)
 --------------------------
 1. Abrir IRIS_v4_ENTREGABLE.html en Chrome, Firefox, Edge o Safari
 2. Hacer login con las credenciales configuradas en Supabase
-3. Al hacer el primer diagnóstico, IRIS pedirá la API key de Anthropic
-4. Obtener API key en: https://console.anthropic.com
-5. La API key se guarda en el navegador (localStorage)
+3. La IA usa Google Gemini (gratuito) — no requiere clave del usuario final
 
 ARQUITECTURA TÉCNICA
 --------------------
 - Frontend: HTML5 + CSS3 + JavaScript vanilla (sin frameworks)
 - Base de datos de usuarios: Supabase (PostgreSQL)
-- IA: Anthropic Claude API (proxy por backend Node.js — clave protegida)
+- IA: Google Gemini API (gratuito, proxy por backend Node.js — clave protegida)
 - Almacenamiento de diagnósticos: localStorage del navegador
 - Sin backend propio requerido
 
@@ -3605,7 +3603,7 @@ CONFIGURACIÓN DEL BACKEND (iris-backend/.env)
 Editar el archivo .env con:
 
 1. SUPABASE: SB_URL y SB_KEY del proyecto (ver en Supabase Dashboard → Settings → API)
-2. ANTHROPIC: ANTHROPIC_KEY (obtener en https://console.anthropic.com)
+2. GEMINI: GEMINI_KEY (obtener gratis en https://aistudio.google.com/apikey)
 3. PORT: puerto del servidor (default: 3000)
 
 CREAR TABLA EN SUPABASE
@@ -3642,7 +3640,7 @@ FUNCIONALIDADES
 ✅ 4 pilares P.E.D.A (Perceive, Expose, Design, Anticipate)
 ✅ Scoring automático con ponderación
 ✅ Detección de contradicciones
-✅ IA narrativa con Claude (Anthropic)
+✅ IA narrativa con Google Gemini (gratuito)
 ✅ Fallback sin IA (análisis offline)
 ✅ Historial de diagnósticos (localStorage)
 ✅ Multi-workspace
