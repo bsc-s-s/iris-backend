@@ -1760,6 +1760,18 @@ function validateAndStart(){
   startAssessment();
 }
 
+// ─── ALERTA SONORA (Web Audio API, sin archivos) ─────────────────────────────
+function playAlert(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const g=ctx.createGain();g.connect(ctx.destination);g.gain.value=0.3;
+    [880,660,880].forEach((freq,i)=>{
+      const o=ctx.createOscillator();o.type='sine';o.frequency.value=freq;
+      o.connect(g);o.start(ctx.currentTime+i*0.12);o.stop(ctx.currentTime+i*0.12+0.1);
+    });
+  }catch(e){}
+}
+
 // ─── SUPABASE PROXY (API keys protegidas en server) ──────────────────────────
 async function sbFetch(path, opts={}) {
   const res = await fetch('/api/supabase/' + path, {
@@ -2144,7 +2156,7 @@ function renderQ(){
     ${inp}
     <div class="qnav">
       ${_queueIndex>0?`<button class="btng" onclick="prevQ()">← RETROCEDER</button>`:''}
-      <button class="btnp" id="nb" onclick="${last?'tryGen()':'nextQ()'}" style="opacity:${canGo(q)?1:0.35}">
+      <button class="btnp" id="nb" onclick="${last?'tryGen()':'nextQ()'}" ${!canGo(q)?'disabled':''}">
         <span>${last?'EJECUTAR ANÁLISIS IRIS ▸':'CONTINUAR ANÁLISIS ▸'}</span>
       </button>
       <span class="qhint">${Object.keys(answers).length}/${_qs.length} PROCESADAS</span>
@@ -2355,6 +2367,7 @@ function fallback(scores){
 }
 
 function renderReport(scores,rpt){
+  playAlert();
   show('report');
   const modMeta = MODULE_META[activeModule] || MODULE_META.SEG;
 
