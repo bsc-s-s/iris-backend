@@ -15,7 +15,6 @@ app.post('/api/anthropic/messages', async (req, res) => {
   if (!process.env.ANTHROPIC_KEY) {
     return res.status(400).json({ error: { message: 'ANTHROPIC_KEY no configurada en el servidor' } });
   }
-app.post('/api/anthropic/messages', async (req, res) => {
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
