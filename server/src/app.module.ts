@@ -17,6 +17,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { EmailModule } from './modules/email/email.module';
 import { SsoModule } from './modules/sso/sso.module';
 import { MonitoringService } from './modules/analytics/monitoring.service';
+import { MfaModule } from './modules/mfa/mfa.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { MonitoringService } from './modules/analytics/monitoring.service';
     BillingModule,
     EmailModule,
     SsoModule,
+    MfaModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, MonitoringService],
   exports: [MonitoringService],

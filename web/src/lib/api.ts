@@ -64,10 +64,16 @@ export const v1 = {
     dashboard: () => v1Request<any>("/analytics/dashboard"),
   },
   compliance: {
+    health: () => v1Request<any>("/compliance/health"),
     gdpr: () => v1Request<any>("/compliance/gdpr"),
     iso27001: () => v1Request<any>("/compliance/iso27001"),
+    nist: () => v1Request<any>("/compliance/nist"),
+    soc2: () => v1Request<any>("/compliance/soc2"),
+    esg: () => v1Request<any>("/compliance/esg"),
     evaluate: (data: { framework: string; controls?: string[] }) =>
       v1Request<any>("/compliance/evaluate", { method: "POST", body: data }),
+    evaluateAll: (data?: { controls?: Record<string, string[]> }) =>
+      v1Request<any>("/compliance/evaluate-all", { method: "POST", body: data || {} }),
   },
   anomalies: {
     detect: (data: any) => v1Request<any>("/anomalies/detect", { method: "POST", body: data }),
@@ -88,6 +94,12 @@ export const v1 = {
       v1Request<any>("/billing/checkout", { method: "POST", body: data }),
     capture: (orderId: string) =>
       v1Request<any>("/billing/capture", { method: "POST", body: { orderId } }),
+  },
+  mfa: {
+    setup: () => v1Request<any>("/mfa/setup", { method: "POST" }),
+    verify: (token: string) => v1Request<any>("/mfa/verify", { method: "POST", body: { token } }),
+    disable: () => v1Request<any>("/mfa/disable", { method: "POST" }),
+    status: () => v1Request<any>("/mfa/status"),
   },
   sso: {
     providers: () => v1Request<string[]>("/sso/providers"),
