@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: iris-enterprise
+    runtime: node
+    repo: https://github.com/bsc-s-s/iris-backend
+    plan: free
+    branch: main
+    buildCommand: cd server && npm install && npx prisma generate && npx nest build
+    startCommand: cd server && node dist/main.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DB_HOST
+        value: aws-0-eu-west-1.pooler.supabase.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        value: postgres.emhqfkdeeuqgojvjonkg
+      - key: DB_PASS
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 15m
+      - key: GROQ_KEY
+        sync: false
+      - key: SB_URL
+        sync: false
+      - key: SB_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"

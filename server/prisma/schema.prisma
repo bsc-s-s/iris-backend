@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      String   @default("free")
+  settings  Json?
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  facilities  Facility[]
+  assessments Assessment[]
+  assets      Asset[]
+  auditLogs   AuditLog[]
+  protocols   SecurityProtocol[]
+  simulations Simulation[]
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  name           String
+  role           String    @default("viewer")
+  title          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  createdAssessments Assessment[] @relation("AssessmentCreator")
+  auditLogs          AuditLog[]
+  refreshTokens      RefreshToken[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Facility {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  address        String?
+  country        String?
+  city           String?
+  riskLevel      String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assessments Assessment[]
+  assets      Asset[]
+
+  @@index([organizationId])
+}
+
+model Assessment {
+  id              String    @id @default(cuid())
+  title           String
+  status          String    @default("draft")
+  version         Int       @default(1)
+  methodology     String    @default("iris-v4")
+  scores          Json?
+  recommendations Json?
+  securityPlan    Json?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  facilityId     String?
+  facility       Facility?     @relation(fields: [facilityId], references: [id])
+  createdById    String
+  createdBy      User          @relation("AssessmentCreator", fields: [createdById], references: [id])
+
+  responses        AssessmentResponse[]
+  vulnerabilities  Vulnerability[]
+  simulations      Simulation[]
+  incidents        Incident[]
+
+  @@index([organizationId])
+  @@index([facilityId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model AssessmentResponse {
+  id           String @id @default(cuid())
+  questionId   String
+  questionKey  String
+  response     Json
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+}
+
+model Vulnerability {
+  id           String   @id @default(cuid())
+  category     String
+  name         String
+  description  String
+  severity     String
+  status       String   @default("open")
+  mitigation   String?
+  deadline     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@index([status])
+}
+
+model SecurityProtocol {
+  id             String   @id @default(cuid())
+  name           String
+  description    String
+  category       String
+  priority       String
+  status         String   @default("active")
+  implementation Json?
+  effectiveness  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([category])
+}
+
+model Simulation {
+  id           String    @id @default(cuid())
+  type         String
+  name         String
+  scenario     Json?
+  results      Json?
+  status       String    @default("pending")
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([assessmentId])
+  @@index([type])
+}
+
+model Incident {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  type         String
+  severity     String
+  status       String    @default("reported")
+  impact       Json?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+}
+
+model Asset {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  value          String
+  location       String?
+  description    String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  facilityId     String?
+  facility       Facility?   @relation(fields: [facilityId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entity         String
+  entityId       String?
+  description    String?
+  metadata       Json?
+  ipAddress      String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}

@@ -1,0 +1,100 @@
+const API_BASE = "/api";
+
+type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  params?: Record<string, string>;
+};
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { method = "GET", body, params } = options;
+
+  let url = `${API_BASE}${path}`;
+  if (params) {
+    const qs = new URLSearchParams(params).toString();
+    if (qs) url += `?${qs}`;
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || `API Error: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export const api = {
+  auth: {
+    login: (data: { email: string; password: string }) =>
+      request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/login", { method: "POST", body: data }),
+    register: (data: { email: string; password: string; name: string; organizationName: string }) =>
+      request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/register", { method: "POST", body: data }),
+    refresh: (refreshToken: string) =>
+      request<{ accessToken: string; refreshToken: string }>("/auth/refresh", { method: "POST", body: { refreshToken } }),
+    me: () => request<{ user: any; organization: any }>("/auth/me", { method: "POST" }),
+    logout: () => request<{ ok: boolean }>("/auth/logout", { method: "POST" }),
+  },
+  assessments: {
+    list: (status?: string) => request<any[]>("/assessments", { params: status ? { status } : {} }),
+    get: (id: string) => request<any>(`/assessments/${id}`),
+    create: (data: { title: string; facilityId?: string; methodology?: string }) =>
+      request<any>("/assessments", { method: "POST", body: data }),
+    submitResponse: (id: string, data: { questionId: string; questionKey: string; response: any }) =>
+      request<any>(`/assessments/${id}/responses`, { method: "POST", body: data }),
+    calculate: (id: string) => request<any>(`/assessments/${id}/calculate`, { method: "POST" }),
+    generatePlan: (id: string) => request<any>(`/assessments/${id}/plan`, { method: "POST" }),
+    trends: () => request<any>("/assessments/trends"),
+  },
+  facilities: {
+    list: () => request<any[]>("/assessments/facilities/list"),
+    create: (data: { name: string; type: string; address?: string; country?: string; city?: string }) =>
+      request<any>("/assessments/facilities", { method: "POST", body: data }),
+  },
+  organizations: {
+    current: () => request<any>("/organizations/current"),
+    update: (data: any) => request<any>("/organizations/current", { method: "PUT", body: data }),
+    stats: () => request<any>("/organizations/stats"),
+  },
+  users: {
+    list: () => request<any[]>("/users"),
+    update: (id: string, data: any) => request<any>(`/users/${id}`, { method: "PUT", body: data }),
+    remove: (id: string) => request<any>(`/users/${id}`, { method: "DELETE" }),
+  },
+  aiAnalyst: {
+    analyze: (data: { assessmentId?: string; question: string; contextType?: string }) =>
+      request<any>("/ai-analyst/analyze", { method: "POST", body: data }),
+    report: (assessmentId: string) =>
+      request<any>("/ai-analyst/report", { method: "POST", body: { assessmentId } }),
+  },
+  securityPlanning: {
+    generate: (data: { assessmentId?: string; scope?: string; timeframeMonths?: number }) =>
+      request<any>("/security-planning/generate", { method: "POST", body: data }),
+    protocols: () => request<any[]>("/security-planning/protocols"),
+    updateProtocol: (id: string, data: any) =>
+      request<any>(`/security-planning/protocols/${id}`, { method: "PUT", body: data }),
+  },
+  threatSimulation: {
+    types: () => request<any[]>("/threat-simulation/types"),
+    run: (assessmentId: string, type: string) =>
+      request<any>(`/threat-simulation/run/${assessmentId}/${type}`, { method: "POST" }),
+    history: (assessmentId: string) =>
+      request<any[]>(`/threat-simulation/history/${assessmentId}`),
+  },
+  audit: {
+    list: (params?: Record<string, string>) => request<any>("/audit", { params }),
+    stats: () => request<any>("/audit/stats"),
+  },
+};
