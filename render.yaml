@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: iris-enterprise
+    name: iris-backend
     runtime: node
     repo: https://github.com/bsc-s-s/iris-backend
+    region: oregon
     plan: free
     branch: main
     buildCommand: cd server && npm install && npx prisma generate && npx nest build
