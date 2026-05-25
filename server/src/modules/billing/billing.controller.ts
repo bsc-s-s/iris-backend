@@ -20,17 +20,26 @@ export class BillingController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Crear sesión de checkout Stripe' })
-  @ApiResponse({ status: 201, description: 'URL de checkout de Stripe' })
+  @ApiOperation({ summary: 'Crear orden de suscripción PayPal' })
+  @ApiResponse({ status: 201, description: 'URL de aprobación de PayPal' })
   async checkout(@Body() body: { planId: string; successUrl: string; cancelUrl: string }, @CurrentUser('organizationId') orgId: string) {
     return this.billing.createCheckoutSession(orgId, body.planId, body.successUrl, body.cancelUrl);
   }
 
+  @Post('capture')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Capturar orden PayPal aprobada' })
+  @ApiResponse({ status: 201, description: 'Orden capturada' })
+  async capture(@Body() body: { orderId: string }) {
+    return this.billing.captureOrder(body.orderId);
+  }
+
   @Post('webhook')
-  @ApiOperation({ summary: 'Webhook de Stripe (eventos de suscripción)' })
+  @ApiOperation({ summary: 'Webhook de PayPal (eventos de suscripción)' })
   @ApiResponse({ status: 200, description: 'Evento recibido' })
-  async webhook(@Req() req: any, @Headers('stripe-signature') signature: string) {
-    const payload = req.rawBody || JSON.stringify(req.body);
-    return this.billing.handleWebhook(payload, signature);
+  async webhook(@Headers() headers: Record<string, string>, @Body() body: any) {
+    return this.billing.handleWebhook(headers, body);
   }
 }

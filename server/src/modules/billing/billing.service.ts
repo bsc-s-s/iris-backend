@@ -9,13 +9,6 @@ export interface Plan {
   features: string[];
 }
 
-export interface SubscriptionStatus {
-  active: boolean;
-  plan: Plan | null;
-  currentPeriodEnd: string | null;
-  cancelAtPeriodEnd: boolean;
-}
-
 const PLANS: Plan[] = [
   { id: 'starter', name: 'Starter', price: 29900, currency: 'EUR', interval: 'month', features: ['1 organización', '5 usuarios', '10 evaluaciones/mes', 'API access'] },
   { id: 'professional', name: 'Professional', price: 99900, currency: 'EUR', interval: 'month', features: ['1 organización', '25 usuarios', 'Evaluaciones ilimitadas', 'API v1 + Compliance', 'AI Analyst', 'Soporte prioritario'] },
@@ -24,40 +17,122 @@ const PLANS: Plan[] = [
 
 @Injectable()
 export class BillingService {
-  private stripe: any = null;
+  private readonly clientId: string | null;
+  private readonly clientSecret: string | null;
+  private readonly mode: 'sandbox' | 'live';
+  private accessToken: string | null = null;
+  private tokenExpiresAt: number = 0;
 
   constructor() {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (key) {
-      try { this.stripe = new (require('stripe'))(key); } catch {}
-    }
+    this.clientId = process.env.PAYPAL_CLIENT_ID || null;
+    this.clientSecret = process.env.PAYPAL_CLIENT_SECRET || null;
+    this.mode = (process.env.PAYPAL_MODE as any) || 'sandbox';
+  }
+
+  get baseUrl() {
+    return this.mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
   }
 
   getPlans(): Plan[] { return PLANS; }
 
-  async createCheckoutSession(orgId: string, planId: string, successUrl: string, cancelUrl: string): Promise<any> {
-    if (!this.stripe) throw new HttpException('Stripe no configurado (STRIPE_SECRET_KEY requerida)', HttpStatus.SERVICE_UNAVAILABLE);
-    const plan = PLANS.find((p) => p.id === planId);
-    if (!plan) throw new HttpException('Plan no encontrado', HttpStatus.NOT_FOUND);
-    return this.stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{ price_data: { currency: plan.currency.toLowerCase(), product_data: { name: `IRIS ${plan.name}` }, unit_amount: plan.price, recurring: { interval: plan.interval } }, quantity: 1 }],
-      metadata: { orgId, planId },
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken && Date.now() < this.tokenExpiresAt) return this.accessToken;
+    if (!this.clientId || !this.clientSecret) throw new HttpException('PayPal no configurado (PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET requeridos)', HttpStatus.SERVICE_UNAVAILABLE);
+
+    const basic = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    const res = await fetch(`${this.baseUrl}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=client_credentials',
     });
+    if (!res.ok) throw new HttpException('Error autenticando con PayPal', HttpStatus.SERVICE_UNAVAILABLE);
+    const data = await res.json();
+    this.accessToken = data.access_token;
+    this.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
+    return this.accessToken!;
   }
 
-  async handleWebhook(payload: any, signature: string): Promise<any> {
-    if (!this.stripe) throw new HttpException('Stripe no configurado', HttpStatus.SERVICE_UNAVAILABLE);
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    let event: any;
-    try {
-      event = this.stripe.webhooks.constructEvent(payload, signature, endpointSecret);
-    } catch {
+  async createCheckoutSession(orgId: string, planId: string, successUrl: string, cancelUrl: string): Promise<any> {
+    const plan = PLANS.find((p) => p.id === planId);
+    if (!plan) throw new HttpException('Plan no encontrado', HttpStatus.NOT_FOUND);
+
+    const token = await this.getAccessToken();
+    const unitAmount = (plan.price / 100).toFixed(2);
+
+    const orderPayload: any = {
+      intent: 'SUBSCRIPTION',
+      purchase_units: [{
+        reference_id: planId,
+        description: `IRIS ${plan.name}`,
+        amount: { currency_code: plan.currency, value: unitAmount },
+        custom_id: orgId,
+      }],
+      application_context: {
+        brand_name: 'IRIS Enterprise',
+        landing_page: 'LOGIN',
+        user_action: 'SUBSCRIBE_NOW',
+        return_url: successUrl,
+        cancel_url: cancelUrl,
+      },
+    };
+
+    if (plan.interval === 'month') {
+      orderPayload.purchase_units[0].billing_cycle = [{
+        frequency: { interval_unit: 'MONTH', interval_count: 1 },
+        tenure_type: 'REGULAR',
+        sequence: 1,
+        pricing_scheme: { fixed_price: { value: unitAmount, currency_code: plan.currency } },
+      }];
+    }
+
+    const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderPayload),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new HttpException(`PayPal error: ${err}`, HttpStatus.BAD_GATEWAY);
+    }
+
+    const order = await res.json();
+    const approvalUrl = order.links?.find((l: any) => l.rel === 'approve')?.href;
+
+    return { orderId: order.id, status: order.status, url: approvalUrl };
+  }
+
+  async captureOrder(orderId: string): Promise<any> {
+    const token = await this.getAccessToken();
+    const res = await fetch(`${this.baseUrl}/v2/checkout/orders/${orderId}/capture`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new HttpException('Error capturando orden PayPal', HttpStatus.BAD_GATEWAY);
+    return res.json();
+  }
+
+  async handleWebhook(headers: Record<string, string>, body: any): Promise<any> {
+    const token = await this.getAccessToken();
+
+    const verification = await fetch(`${this.baseUrl}/v1/notifications/verify-webhook-signature`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auth_algo: headers['paypal-auth-algo'],
+        cert_url: headers['paypal-cert-url'],
+        transmission_id: headers['paypal-transmission-id'],
+        transmission_sig: headers['paypal-transmission-sig'],
+        transmission_time: headers['paypal-transmission-time'],
+        webhook_id: process.env.PAYPAL_WEBHOOK_ID,
+        webhook_event: body,
+      }),
+    });
+
+    if (!verification.ok || (await verification.json()).verification_status !== 'SUCCESS') {
       throw new HttpException('Webhook signature inválida', HttpStatus.BAD_REQUEST);
     }
-    return { received: true, type: event.type };
+
+    return { received: true, type: body.event_type };
   }
 }

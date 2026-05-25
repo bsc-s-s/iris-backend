@@ -49,7 +49,15 @@ export default function BillingPage() {
       const successUrl = `${window.location.origin}/billing?success=true`;
       const cancelUrl = `${window.location.origin}/billing?canceled=true`;
       const session = await v1.billing.checkout({ planId, successUrl, cancelUrl });
-      if (session.url) window.location.href = session.url;
+      if (session.url) {
+        window.open(session.url, "_blank");
+        // After PayPal approval, capture the order
+        const orderId = session.orderId;
+        if (orderId) {
+          await v1.billing.capture(orderId);
+          alert("Suscripción activada exitosamente vía PayPal");
+        }
+      }
     } catch (e: any) {
       alert(e.message || "Error al iniciar checkout");
     }
@@ -67,7 +75,7 @@ export default function BillingPage() {
           <CreditCard className="h-5 w-5 text-iris-400" />
           <div>
             <p className="text-sm font-medium text-white">Plan actual: <span className="uppercase text-iris-accent">{currentPlan}</span></p>
-            <p className="text-xs text-iris-400">Los pagos se procesan de forma segura a través de Stripe</p>
+            <p className="text-xs text-iris-400">Los pagos se procesan de forma segura a través de PayPal</p>
           </div>
         </div>
       </div>

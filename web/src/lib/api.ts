@@ -83,6 +83,8 @@ export const v1 = {
     plans: () => v1Request<any[]>("/billing/plans"),
     checkout: (data: { planId: string; successUrl: string; cancelUrl: string }) =>
       v1Request<any>("/billing/checkout", { method: "POST", body: data }),
+    capture: (orderId: string) =>
+      v1Request<any>("/billing/capture", { method: "POST", body: { orderId } }),
   },
   sso: {
     providers: () => v1Request<string[]>("/sso/providers"),
