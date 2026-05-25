@@ -1,15 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users as UsersIcon, UserPlus, Shield, Ban } from "lucide-react";
+import { useState, useEffect, type FormEvent } from "react";
+import { Users as UsersIcon, UserPlus, Shield, Ban, X } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [title, setTitle] = useState("");
+  const [role, setRole] = useState("analyst");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    api.users.list().then(setUsers).catch(() => {});
-  }, []);
+  const load = () => api.users.list().then(setUsers).catch(() => {});
+
+  useEffect(() => { load(); }, []);
+
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await api.users.create({ email, password, name, title, role });
+      setShowModal(false);
+      setName(""); setEmail(""); setPassword(""); setTitle(""); setRole("analyst");
+      await load();
+    } catch (err: any) {
+      setError(err.message || "Error al crear usuario");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -18,7 +42,7 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-white">Usuarios</h1>
           <p className="mt-1 text-sm text-iris-400">Gestiona los usuarios de tu organización</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
           <UserPlus className="h-4 w-4" /> Invitar usuario
         </button>
       </div>
@@ -51,6 +75,53 @@ export default function UsersPage() {
           )}
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-md rounded-xl border border-iris-600 bg-iris-800 p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Crear usuario</h2>
+              <button onClick={() => setShowModal(false)} className="text-iris-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-4">
+              {error && (
+                <div className="rounded-lg border border-iris-danger/30 bg-iris-danger/10 px-4 py-2 text-sm text-iris-danger">
+                  {error}
+                </div>
+              )}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Nombre completo</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Nombre del usuario" required />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Correo electrónico</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="usuario@ejemplo.com" required />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Contraseña temporal</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder="Mín. 6 caracteres" required minLength={6} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Cargo / Título</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="input" placeholder="Ej: Analista de Seguridad" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Rol</label>
+                <select value={role} onChange={(e) => setRole(e.target.value)} className="input">
+                  <option value="analyst">Analista</option>
+                  <option value="admin">Administrador</option>
+                  <option value="viewer">Visor</option>
+                </select>
+              </div>
+              <button type="submit" disabled={loading} className="btn btn-primary w-full">
+                {loading ? "Creando..." : "Crear usuario"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

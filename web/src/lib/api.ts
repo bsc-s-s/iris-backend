@@ -70,6 +70,8 @@ export const api = {
   },
   users: {
     list: () => request<any[]>("/users"),
+    create: (data: { email: string; password: string; name: string; title?: string; role?: string }) =>
+      request<any>("/users", { method: "POST", body: data }),
     update: (id: string, data: any) => request<any>(`/users/${id}`, { method: "PUT", body: data }),
     remove: (id: string) => request<any>(`/users/${id}`, { method: "DELETE" }),
   },
