@@ -17,6 +17,8 @@ import {
   TrendingUp,
   AlertTriangle,
   ShieldCheck,
+  CreditCard,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -29,6 +31,8 @@ const NAV_ITEMS = [
   { href: "/security-planning", label: "Planificación", icon: Shield },
   { href: "/threat-simulation", label: "Simulación", icon: Swords },
   { href: "/ai-analyst", label: "AI Analyst", icon: Brain },
+  { href: "/billing", label: "Facturación", icon: CreditCard },
+  { href: "/sso", label: "SSO", icon: Globe },
   { href: "/users", label: "Usuarios", icon: Users },
   { href: "/audit", label: "Auditoría", icon: FileText },
   { href: "/settings", label: "Configuración", icon: Settings },

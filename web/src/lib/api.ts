@@ -79,6 +79,16 @@ export const v1 = {
   anomalies: {
     detect: (data: any) => v1Request<any>("/anomalies/detect", { method: "POST", body: data }),
   },
+  billing: {
+    plans: () => v1Request<any[]>("/billing/plans"),
+    checkout: (data: { planId: string; successUrl: string; cancelUrl: string }) =>
+      v1Request<any>("/billing/checkout", { method: "POST", body: data }),
+  },
+  sso: {
+    providers: () => v1Request<string[]>("/sso/providers"),
+    callback: (data: { provider: string; response: any }) =>
+      v1Request<any>("/sso/callback", { method: "POST", body: data }),
+  },
 };
 
 export const api = {
