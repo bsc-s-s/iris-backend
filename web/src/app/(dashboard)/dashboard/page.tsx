@@ -26,6 +26,8 @@ export default function ExecutiveDashboard() {
   const [indexes, setIndexes] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [recentAssessments, setRecentAssessments] = useState<any[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
 
   useEffect(() => {
     Promise.all([
@@ -148,9 +150,20 @@ export default function ExecutiveDashboard() {
           color: trend === "improving" ? "badge-low" : trend === "deteriorating" ? "badge-critical" : "badge-medium",
         }}
         action={
-          <button className="btn btn-primary btn-sm">
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={reportLoading}
+            onClick={async () => {
+              setReportLoading(true);
+              try {
+                const data = await v1.reports.executive();
+                setReportData(data);
+              } catch (e) { alert("Error al generar reporte"); }
+              finally { setReportLoading(false); }
+            }}
+          >
             <Zap className="h-4 w-4" />
-            Generar Reporte Ejecutivo
+            {reportLoading ? "Generando..." : "Generar Reporte Ejecutivo"}
           </button>
         }
       />
@@ -598,6 +611,99 @@ export default function ExecutiveDashboard() {
           )}
         </GlassCard>
       </div>
+
+      {/* Reporte Modal */}
+      {reportData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setReportData(null)}>
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-iris-600/30 bg-iris-800 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white">{reportData.title}</h2>
+              <button className="btn btn-ghost text-xs" onClick={() => setReportData(null)}>Cerrar</button>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-lg bg-iris-700/50 p-4">
+                <p className="text-xs text-iris-400">Generado: {new Date(reportData.generatedAt).toLocaleString("es")}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded bg-iris-600/20 p-2 text-center">
+                    <p className="text-xs text-iris-400">Score</p>
+                    <p className="text-lg font-bold text-white">{reportData.overallScore}</p>
+                  </div>
+                  <div className="rounded bg-iris-600/20 p-2 text-center">
+                    <p className="text-xs text-iris-400">Audit Readiness</p>
+                    <p className="text-lg font-bold text-white">{reportData.auditReadiness}%</p>
+                  </div>
+                  <div className="rounded bg-iris-600/20 p-2 text-center">
+                    <p className="text-xs text-iris-400">Madurez</p>
+                    <p className="text-lg font-bold text-white">{reportData.maturityLevel}</p>
+                  </div>
+                  <div className="rounded bg-iris-600/20 p-2 text-center">
+                    <p className="text-xs text-iris-400">Hallazgos</p>
+                    <p className="text-lg font-bold text-white">{reportData.criticalFindings}</p>
+                  </div>
+                </div>
+              </div>
+
+              {reportData.organizationProfile && (
+                <div className="rounded-lg bg-iris-700/50 p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-white">Perfil Organizacional</h3>
+                  <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                    <div><p className="text-iris-400">Usuarios</p><p className="font-bold text-white">{reportData.organizationProfile.users}</p></div>
+                    <div><p className="text-iris-400">Evaluaciones</p><p className="font-bold text-white">{reportData.organizationProfile.assessments}</p></div>
+                    <div><p className="text-iris-400">Protocolos</p><p className="font-bold text-white">{reportData.organizationProfile.protocols}</p></div>
+                    <div><p className="text-iris-400">Incidentes</p><p className="font-bold text-white">{reportData.organizationProfile.incidents}</p></div>
+                    <div><p className="text-iris-400">Riesgo</p><p className="font-bold text-white">{reportData.organizationProfile.riskScore}</p></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-lg bg-iris-700/50 p-4">
+                <h3 className="mb-2 text-sm font-semibold text-white">Frameworks de Cumplimiento</h3>
+                <div className="space-y-2">
+                  {reportData.frameworks?.map((fw: any) => (
+                    <div key={fw.name} className="flex items-center justify-between rounded bg-iris-600/20 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-white">{fw.name}</p>
+                        <p className="text-[10px] text-iris-400">{fw.implemented}/{fw.total} controles implementados</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-white">{fw.score}%</p>
+                        <p className="text-[10px] text-iris-400">{fw.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {reportData.gapAnalysis && reportData.gapAnalysis.length > 0 && (
+                <div className="rounded-lg bg-iris-700/50 p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-white">Gap Analysis</h3>
+                  <div className="space-y-2">
+                    {reportData.gapAnalysis.map((g: any) => (
+                      <div key={g.framework} className="rounded bg-iris-600/20 px-3 py-2 text-xs">
+                        <p className="font-medium text-white">{g.framework}: {g.score}% - {g.remediationEffort} esfuerzo ({g.estimatedTimeline})</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {reportData.recommendations && reportData.recommendations.length > 0 && (
+                <div className="rounded-lg bg-iris-700/50 p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-white">Recomendaciones</h3>
+                  <ul className="space-y-1">
+                    {reportData.recommendations.map((r: string, i: number) => (
+                      <li key={i} className="flex gap-2 text-xs text-iris-200">
+                        <span className="mt-0.5 shrink-0 text-iris-accent">•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Status Bar */}
       <div className="flex items-center justify-between rounded-lg border border-iris-600/30 bg-iris-700/50 px-4 py-2.5">

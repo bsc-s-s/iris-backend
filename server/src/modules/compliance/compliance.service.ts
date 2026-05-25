@@ -247,9 +247,107 @@ export class ComplianceEvaluator {
     if (critical.length > 0) {
       recs.push(`[CRÍTICO] ${framework}: Implementar controles de alto peso: ${critical.slice(0, 3).join(', ')}`);
     }
-    recs.push(`${framework}: ${missing.length} controles pendientes de ${missing.length + (missing.length > 0 ? 0 : 0)}`);
+    recs.push(`${framework}: ${missing.length} controles pendientes`);
     recs.push(...missing.slice(0, 5).map(c => `Implementar: ${c}`));
     if (missing.length > 5) recs.push(`Y ${missing.length - 5} controles adicionales...`);
     return recs;
+  }
+
+  estimateControls(profile: { userCount: number; assessmentCount: number; protocolCount: number; incidentCount: number; completedAssessments: number; overallScore: number }): Record<string, string[]> {
+    const score = profile.overallScore;
+    const hasAssessments = profile.completedAssessments > 0;
+    const hasProtocols = profile.protocolCount > 0;
+    const hasFewIncidents = profile.incidentCount <= 3;
+
+    const estimated: Record<string, string[]> = {};
+
+    // GDPR estimation
+    const gdpr: string[] = [];
+    if (score >= 40) gdpr.push('gdpr-01');
+    if (score >= 50) { gdpr.push('gdpr-02', 'gdpr-06', 'gdpr-09'); }
+    if (score >= 60) { gdpr.push('gdpr-03', 'gdpr-08', 'gdpr-10'); }
+    if (score >= 70) { gdpr.push('gdpr-04', 'gdpr-07'); }
+    if (score >= 80) { gdpr.push('gdpr-05'); }
+    if (hasAssessments) gdpr.push('gdpr-06');
+    if (hasProtocols) gdpr.push('gdpr-08');
+    if (hasFewIncidents) gdpr.push('gdpr-04');
+    estimated.gdpr = [...new Set(gdpr)];
+
+    // ISO 27001 estimation
+    const iso: string[] = [];
+    if (score >= 35) iso.push('iso-01');
+    if (score >= 45) { iso.push('iso-02', 'iso-03', 'iso-10'); }
+    if (score >= 55) { iso.push('iso-04', 'iso-07'); }
+    if (score >= 65) { iso.push('iso-05', 'iso-08'); }
+    if (score >= 75) { iso.push('iso-06', 'iso-09'); }
+    if (hasProtocols) iso.push('iso-01', 'iso-04');
+    if (hasFewIncidents) iso.push('iso-08');
+    if (hasAssessments) iso.push('iso-03');
+    estimated.iso27001 = [...new Set(iso)];
+
+    // NIST CSF estimation
+    const nist: string[] = [];
+    if (score >= 35) nist.push('nist-01', 'nist-05');
+    if (score >= 50) { nist.push('nist-02', 'nist-03', 'nist-07', 'nist-09'); }
+    if (score >= 65) { nist.push('nist-04', 'nist-06', 'nist-08', 'nist-10'); }
+    if (hasAssessments) nist.push('nist-02');
+    if (hasProtocols) nist.push('nist-03', 'nist-07');
+    if (hasFewIncidents) nist.push('nist-06');
+    estimated.nist = [...new Set(nist)];
+
+    // SOC 2 estimation
+    const soc2: string[] = [];
+    if (score >= 35) soc2.push('soc2-01');
+    if (score >= 50) { soc2.push('soc2-02', 'soc2-05', 'soc2-08', 'soc2-10'); }
+    if (score >= 65) { soc2.push('soc2-03', 'soc2-04', 'soc2-06', 'soc2-09'); }
+    if (score >= 75) soc2.push('soc2-07');
+    if (hasProtocols) soc2.push('soc2-01', 'soc2-02');
+    if (hasFewIncidents) soc2.push('soc2-05');
+    if (hasAssessments) soc2.push('soc2-03');
+    estimated.soc2 = [...new Set(soc2)];
+
+    // ESG estimation
+    const esg: string[] = [];
+    if (score >= 30) esg.push('esg-01', 'esg-08');
+    if (score >= 45) { esg.push('esg-02', 'esg-04', 'esg-06', 'esg-10'); }
+    if (score >= 60) { esg.push('esg-03', 'esg-05', 'esg-07', 'esg-09'); }
+    if (hasAssessments) esg.push('esg-08');
+    if (hasProtocols) esg.push('esg-01', 'esg-07');
+    estimated.esg = [...new Set(esg)];
+
+    return estimated;
+  }
+
+  buildExecutiveReport(health: ComplianceHealth, profile: { userCount: number; assessmentCount: number; protocolCount: number; incidentCount: number; overallScore: number }) {
+    const summary = health.overallScore >= 60 ? 'RIESGO CONTROLADO' : health.overallScore >= 30 ? 'ATENCIÓN REQUERIDA' : 'RIESGO CRÍTICO';
+    return {
+      title: 'Reporte Ejecutivo de Cumplimiento',
+      generatedAt: new Date().toISOString(),
+      summary,
+      overallScore: health.overallScore,
+      overallStatus: health.overallStatus,
+      auditReadiness: health.auditReadiness,
+      maturityLevel: health.maturityLevel,
+      criticalFindings: health.criticalFindings,
+      organizationProfile: {
+        users: profile.userCount,
+        assessments: profile.assessmentCount,
+        protocols: profile.protocolCount,
+        incidents: profile.incidentCount,
+        riskScore: profile.overallScore,
+      },
+      frameworks: health.frameworks.map(f => ({
+        name: f.framework,
+        score: f.score,
+        status: f.status,
+        maturity: f.maturity,
+        auditReadiness: f.auditReadiness,
+        implemented: f.controls.filter(c => c.implemented).length,
+        total: f.controls.length,
+        criticalGaps: f.criticalGaps,
+      })),
+      gapAnalysis: health.gapAnalysis,
+      recommendations: health.recommendations,
+    };
   }
 }

@@ -125,6 +125,10 @@ export const v1 = {
     initiateLogin: (provider: string, orgSlug?: string) =>
       v1Request<{ redirectUrl: string }>(`/sso/login/${provider}${orgSlug ? `?org=${orgSlug}` : ""}`, { method: "POST" }),
   },
+  reports: {
+    executive: () => v1Request<any>("/compliance/generate-report", { method: "POST" }),
+    assessment: (id: string) => v1Request<any>(`/reports/assessment/${id}`, { method: "POST" }),
+  },
 };
 
 export const api = {
