@@ -39,6 +39,12 @@ services:
         value: https://iris-frontend-y053.onrender.com
       - key: CORS_ORIGIN
         value: https://iris-frontend-y053.onrender.com
+      - key: PAYPAL_CLIENT_ID
+        value: Ad61gJ3Sv4Wp75mo09583hz9R7LDsp-aJUG1znJr5hqN8Yqknsz0gd8vo7tY7ZdDEij9L9Blv_KlbiK0
+      - key: PAYPAL_CLIENT_SECRET
+        value: EAT2hvOghQmP4UOm_ZEsa6pnv7xaW0kT2J2LQ7rl E1z1Je3QZpha2NatiopC1hLsIZskpT2mIg6MufZr
+      - key: PAYPAL_MODE
+        value: sandbox
 
   - type: web
     name: iris-frontend
