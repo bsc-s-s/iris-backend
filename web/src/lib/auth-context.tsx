@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { api } from "./api";
+import { api, v1 } from "./api";
 
 type User = { id: string; email: string; name: string; role: string; title?: string };
 type Organization = { id: string; name: string; slug: string; plan: string };
@@ -13,6 +13,8 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; name: string; organizationName: string }) => Promise<void>;
   logout: () => Promise<void>;
+  ssoLogin: (provider: string) => Promise<void>;
+  setSsoSession: (accessToken: string, refreshToken: string, userData: any, orgData: any) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,8 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganization(null);
   };
 
+  const ssoLogin = async (provider: string) => {
+    const result = await v1.sso.initiateLogin(provider);
+    window.location.href = result.redirectUrl;
+  };
+
+  const setSsoSession = (accessToken: string, refreshToken: string, userData: any, orgData: any) => {
+    localStorage.setItem("iris_token", accessToken);
+    localStorage.setItem("iris_refresh", refreshToken);
+    setUser(userData);
+    setOrganization(orgData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, organization, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, organization, loading, login, register, logout, ssoLogin, setSsoSession }}>
       {children}
     </AuthContext.Provider>
   );

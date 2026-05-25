@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Globe } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { v1 } from "@/lib/api";
+
+const SSO_PROVIDER_ICONS: Record<string, string> = {
+  google: "G",
+  microsoft: "M",
+  oidc: "O",
+  saml: "S",
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,8 +20,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [ssoProviders, setSsoProviders] = useState<any[]>([]);
+  const [ssoLoading, setSsoLoading] = useState<string | null>(null);
+  const { login, ssoLogin } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    v1.sso.providers().then(setSsoProviders).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -83,6 +97,40 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="btn btn-primary w-full">
             {loading ? "Iniciando sesión..." : "Iniciar sesión"}
           </button>
+
+          {ssoProviders.length > 0 && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-iris-600/50" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-iris-800 px-2 text-iris-400">O continúa con</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {ssoProviders.map((p: any) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    disabled={ssoLoading !== null}
+                    onClick={async () => {
+                      setSsoLoading(p.id);
+                      try { await ssoLogin(p.id); } catch { setSsoLoading(null); }
+                    }}
+                    className="btn btn-ghost flex items-center justify-center gap-2 text-xs"
+                  >
+                    {ssoLoading === p.id ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-iris-400 border-t-transparent" />
+                    ) : (
+                      <Globe className="h-4 w-4" />
+                    )}
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           <p className="text-center text-xs text-iris-400">
             ¿No tienes cuenta?{" "}

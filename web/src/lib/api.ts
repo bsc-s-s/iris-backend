@@ -118,9 +118,12 @@ export const v1 = {
     status: () => v1Request<any>("/mfa/status"),
   },
   sso: {
-    providers: () => v1Request<string[]>("/sso/providers"),
-    callback: (data: { provider: string; response: any }) =>
-      v1Request<any>("/sso/callback", { method: "POST", body: data }),
+    providers: () => v1Request<any[]>("/sso/providers"),
+    config: () => v1Request<any[]>("/sso/config"),
+    saveConfig: (data: any) => v1Request<any>("/sso/config", { method: "PUT", body: data }),
+    deleteConfig: (provider: string) => v1Request<any>(`/sso/config/${provider}`, { method: "DELETE" }),
+    initiateLogin: (provider: string, orgSlug?: string) =>
+      v1Request<{ redirectUrl: string }>(`/sso/login/${provider}${orgSlug ? `?org=${orgSlug}` : ""}`, { method: "POST" }),
   },
 };
 
