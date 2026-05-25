@@ -36,7 +36,7 @@ export class BillingService {
   getPlans(): Plan[] { return PLANS; }
 
   private async getAccessToken(): Promise<string> {
-    if (this.accessToken && Date.now() < this.tokenExpiresAt) return this.accessToken;
+    if (this.accessToken && Date.now() < this.tokenExpiresAt) return this.accessToken!;
     if (!this.clientId || !this.clientSecret) throw new HttpException('PayPal no configurado (PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET requeridos)', HttpStatus.SERVICE_UNAVAILABLE);
 
     const basic = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
@@ -45,7 +45,10 @@ export class BillingService {
       headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'grant_type=client_credentials',
     });
-    if (!res.ok) throw new HttpException('Error autenticando con PayPal', HttpStatus.SERVICE_UNAVAILABLE);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new HttpException(`PayPal auth error: ${err}`, HttpStatus.BAD_GATEWAY);
+    }
     const data = await res.json();
     this.accessToken = data.access_token;
     this.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
@@ -59,8 +62,8 @@ export class BillingService {
     const token = await this.getAccessToken();
     const unitAmount = (plan.price / 100).toFixed(2);
 
-    const orderPayload: any = {
-      intent: 'SUBSCRIPTION',
+    const orderPayload = {
+      intent: 'CAPTURE',
       purchase_units: [{
         reference_id: planId,
         description: `IRIS ${plan.name}`,
@@ -70,20 +73,11 @@ export class BillingService {
       application_context: {
         brand_name: 'IRIS Enterprise',
         landing_page: 'LOGIN',
-        user_action: 'SUBSCRIBE_NOW',
+        user_action: 'PAY_NOW',
         return_url: successUrl,
         cancel_url: cancelUrl,
       },
     };
-
-    if (plan.interval === 'month') {
-      orderPayload.purchase_units[0].billing_cycle = [{
-        frequency: { interval_unit: 'MONTH', interval_count: 1 },
-        tenure_type: 'REGULAR',
-        sequence: 1,
-        pricing_scheme: { fixed_price: { value: unitAmount, currency_code: plan.currency } },
-      }];
-    }
 
     const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
       method: 'POST',
@@ -99,7 +93,14 @@ export class BillingService {
     const order = await res.json();
     const approvalUrl = order.links?.find((l: any) => l.rel === 'approve')?.href;
 
-    return { orderId: order.id, status: order.status, url: approvalUrl };
+    return {
+      orderId: order.id,
+      status: order.status,
+      url: approvalUrl,
+      plan: planId,
+      amount: unitAmount,
+      currency: plan.currency,
+    };
   }
 
   async captureOrder(orderId: string): Promise<any> {
@@ -108,12 +109,17 @@ export class BillingService {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
-    if (!res.ok) throw new HttpException('Error capturando orden PayPal', HttpStatus.BAD_GATEWAY);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new HttpException(`PayPal capture error: ${err}`, HttpStatus.BAD_GATEWAY);
+    }
     return res.json();
   }
 
   async handleWebhook(headers: Record<string, string>, body: any): Promise<any> {
     const token = await this.getAccessToken();
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    if (!webhookId) return { received: true, type: body?.event_type, note: 'webhook_id no configurado' };
 
     const verification = await fetch(`${this.baseUrl}/v1/notifications/verify-webhook-signature`, {
       method: 'POST',
@@ -124,7 +130,7 @@ export class BillingService {
         transmission_id: headers['paypal-transmission-id'],
         transmission_sig: headers['paypal-transmission-sig'],
         transmission_time: headers['paypal-transmission-time'],
-        webhook_id: process.env.PAYPAL_WEBHOOK_ID,
+        webhook_id: webhookId,
         webhook_event: body,
       }),
     });

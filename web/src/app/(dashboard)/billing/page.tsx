@@ -42,21 +42,39 @@ export default function BillingPage() {
     v1.billing.plans().then((data) => { setPlans(data); setLoading(false); }).catch(() => setLoading(false));
     const org = localStorage.getItem("iris_org");
     if (org) try { setCurrentPlan(JSON.parse(org).plan || "free"); } catch {}
+
+    // Handle PayPal return
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get("success");
+    const plan = params.get("planId");
+    const orderId = localStorage.getItem("paypal_order_id");
+
+    if (success === "true" && orderId) {
+      v1.billing.capture(orderId).then((res) => {
+        if (res.status === "COMPLETED") {
+          localStorage.removeItem("paypal_order_id");
+          const el = document.getElementById("paypal-msg");
+          if (el) el.innerText = `Pago exitoso. Plan ${plan || ""} activado.`;
+        }
+      }).catch(() => {
+        const el = document.getElementById("paypal-msg");
+        if (el) el.innerText = "El pago no pudo completarse. Contacta a soporte.";
+      });
+    }
+    if (params.get("canceled") === "true") {
+      const el = document.getElementById("paypal-msg");
+      if (el) el.innerText = "Pago cancelado. Podés intentar de nuevo.";
+    }
   }, []);
 
   const handleCheckout = async (planId: string) => {
     try {
-      const successUrl = `${window.location.origin}/billing?success=true`;
+      const successUrl = `${window.location.origin}/billing?success=true&planId=${planId}`;
       const cancelUrl = `${window.location.origin}/billing?canceled=true`;
       const session = await v1.billing.checkout({ planId, successUrl, cancelUrl });
       if (session.url) {
-        window.open(session.url, "_blank");
-        // After PayPal approval, capture the order
-        const orderId = session.orderId;
-        if (orderId) {
-          await v1.billing.capture(orderId);
-          alert("Suscripción activada exitosamente vía PayPal");
-        }
+        localStorage.setItem("paypal_order_id", session.orderId);
+        window.location.href = session.url;
       }
     } catch (e: any) {
       alert(e.message || "Error al iniciar checkout");
@@ -122,6 +140,8 @@ export default function BillingPage() {
           })}
         </div>
       )}
+
+      <div id="paypal-msg" className="card border-iris-600/50 text-center text-sm text-iris-300"></div>
     </div>
   );
 }
