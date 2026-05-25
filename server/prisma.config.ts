@@ -1,8 +1,7 @@
-import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
-const dbUrl = env("DATABASE_URL") || 
-  `postgresql://${env("DB_USER")}:${encodeURIComponent(env("DB_PASS") || "")}@${env("DB_HOST")}:${env("DB_PORT") || "5432"}/${env("DB_NAME") || "postgres"}?sslmode=require`;
+const dbUrl = process.env.DATABASE_URL || 
+  `postgresql://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASS || "")}@${process.env.DB_HOST}:${process.env.DB_PORT || "5432"}/${process.env.DB_NAME || "postgres"}?sslmode=require`;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
