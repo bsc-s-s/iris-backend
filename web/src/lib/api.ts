@@ -95,6 +95,22 @@ export const v1 = {
     capture: (orderId: string) =>
       v1Request<any>("/billing/capture", { method: "POST", body: { orderId } }),
   },
+  apiKeys: {
+    list: () => v1Request<any[]>("/api-keys"),
+    create: (data: { name: string; scopes?: string; rateLimit?: number }) =>
+      v1Request<any>("/api-keys", { method: "POST", body: data }),
+    revoke: (id: string) => v1Request<any>(`/api-keys/${id}/revoke`, { method: "POST" }),
+    delete: (id: string) => v1Request<any>(`/api-keys/${id}`, { method: "DELETE" }),
+  },
+  webhooks: {
+    list: () => v1Request<any[]>("/webhooks"),
+    create: (data: { name: string; url: string; events: string[]; retryCount?: number; timeout?: number }) =>
+      v1Request<any>("/webhooks", { method: "POST", body: data }),
+    update: (id: string, data: any) => v1Request<any>(`/webhooks/${id}`, { method: "PUT", body: data }),
+    delete: (id: string) => v1Request<any>(`/webhooks/${id}`, { method: "DELETE" }),
+    events: (endpointId?: string) => v1Request<any>(endpointId ? `/webhooks/events/${endpointId}` : "/webhooks/events"),
+    test: (id: string) => v1Request<any>(`/webhooks/test/${id}`, { method: "POST" }),
+  },
   mfa: {
     setup: () => v1Request<any>("/mfa/setup", { method: "POST" }),
     verify: (token: string) => v1Request<any>("/mfa/verify", { method: "POST", body: { token } }),

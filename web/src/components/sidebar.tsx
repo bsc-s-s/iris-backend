@@ -19,6 +19,9 @@ import {
   ShieldCheck,
   CreditCard,
   Globe,
+  Key,
+  Radio,
+  ScanEye,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -27,7 +30,9 @@ const NAV_ITEMS = [
   { href: "/assessments", label: "Evaluaciones", icon: ClipboardCheck },
   { href: "/risk-forecast", label: "Pronóstico", icon: TrendingUp },
   { href: "/compliance", label: "Compliance", icon: ShieldCheck },
-  { href: "/anomalies", label: "Alertas", icon: AlertTriangle },
+  { href: "/anomalies", label: "Anomalías", icon: ScanEye },
+  { href: "/api-keys", label: "API Keys", icon: Key },
+  { href: "/webhooks", label: "Webhooks", icon: Radio },
   { href: "/security-planning", label: "Planificación", icon: Shield },
   { href: "/threat-simulation", label: "Simulación", icon: Swords },
   { href: "/ai-analyst", label: "AI Analyst", icon: Brain },

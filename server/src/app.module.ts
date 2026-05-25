@@ -18,6 +18,9 @@ import { EmailModule } from './modules/email/email.module';
 import { SsoModule } from './modules/sso/sso.module';
 import { MonitoringService } from './modules/analytics/monitoring.service';
 import { MfaModule } from './modules/mfa/mfa.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { ApiKeyGuard } from './middlewares/api-key.guard';
 
 @Module({
   imports: [
@@ -38,8 +41,14 @@ import { MfaModule } from './modules/mfa/mfa.module';
     EmailModule,
     SsoModule,
     MfaModule,
+    ApiKeysModule,
+    WebhooksModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, MonitoringService],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    MonitoringService,
+    ApiKeyGuard,
+  ],
   exports: [MonitoringService],
 })
 export class AppModule {}
