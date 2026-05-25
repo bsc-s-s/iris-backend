@@ -35,10 +35,10 @@ services:
         sync: false
       - key: SB_KEY
         sync: false
-      - key: CORS_ORIGIN
-        value: "*"
       - key: FRONTEND_URL
-        value: ""
+        value: https://iris-frontend-y053.onrender.com
+      - key: CORS_ORIGIN
+        value: https://iris-frontend-y053.onrender.com
 
   - type: web
     name: iris-frontend
