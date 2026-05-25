@@ -151,6 +151,81 @@ model SecurityProtocol {
   @@index([createdAt])
 }
 
+model Simulation {
+  id           String    @id @default(cuid())
+  type         String
+  name         String
+  scenario     Json?
+  results      Json?
+  status       String    @default("pending")
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([assessmentId])
+  @@index([type])
+}
+
+model Incident {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  type         String
+  severity     String
+  status       String    @default("reported")
+  impact       Json?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+}
+
+model Asset {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  value          String
+  location       String?
+  description    String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  facilityId     String?
+  facility       Facility?   @relation(fields: [facilityId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entity         String
+  entityId       String?
+  description    String?
+  metadata       Json?
+  ipAddress      String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
 model Subscription {
   id                String   @id @default(cuid())
   planId            String
