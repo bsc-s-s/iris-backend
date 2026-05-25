@@ -36,6 +36,51 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return res.json();
 }
 
+const V1_BASE = "/api/v1";
+
+async function v1Request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { method = "GET", body, params } = options;
+  let url = `${V1_BASE}${path}`;
+  if (params) {
+    const qs = new URLSearchParams(params).toString();
+    if (qs) url += `?${qs}`;
+  }
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || `API Error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export const v1 = {
+  risk: {
+    score: () => v1Request<any>("/risk/score"),
+    analyze: (data: any) => v1Request<any>("/risk/analyze", { method: "POST", body: data }),
+    report: (id: string) => v1Request<any>(`/risk/report/${id}`),
+    predict: (data?: any) => v1Request<any>("/risk/predict", { method: "POST", body: data || {} }),
+  },
+  ai: {
+    insight: (data: { question: string; contextType?: string; riskData?: any }) =>
+      v1Request<any>("/ai/insight", { method: "POST", body: data }),
+  },
+  analytics: {
+    dashboard: () => v1Request<any>("/analytics/dashboard"),
+  },
+  compliance: {
+    gdpr: () => v1Request<any>("/compliance/gdpr"),
+    iso27001: () => v1Request<any>("/compliance/iso27001"),
+    evaluate: (data: { framework: string; controls?: string[] }) =>
+      v1Request<any>("/compliance/evaluate", { method: "POST", body: data }),
+  },
+  anomalies: {
+    detect: (data: any) => v1Request<any>("/anomalies/detect", { method: "POST", body: data }),
+  },
+};
+
 export const api = {
   auth: {
     login: (data: { email: string; password: string }) =>

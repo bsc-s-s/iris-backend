@@ -10,11 +10,15 @@ import { AiAnalystModule } from './ai-analyst/ai-analyst.module';
 import { SecurityPlanningModule } from './security-planning/security-planning.module';
 import { ThreatSimulationModule } from './threat-simulation/threat-simulation.module';
 import { AuditModule } from './audit/audit.module';
+import { CoreModule } from './core/core.module';
+import { V1Module } from './api/v1/v1.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule,
+    CoreModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,
@@ -23,6 +27,8 @@ import { AuditModule } from './audit/audit.module';
     SecurityPlanningModule,
     ThreatSimulationModule,
     AuditModule,
+    V1Module,
+    ComplianceModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

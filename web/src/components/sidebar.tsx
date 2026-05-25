@@ -13,12 +13,19 @@ import {
   FileText,
   LogOut,
   Building2,
+  Gauge,
+  TrendingUp,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/assessments", label: "Evaluaciones", icon: ClipboardCheck },
+  { href: "/risk-forecast", label: "Pronóstico", icon: TrendingUp },
+  { href: "/compliance", label: "Compliance", icon: ShieldCheck },
+  { href: "/anomalies", label: "Alertas", icon: AlertTriangle },
   { href: "/security-planning", label: "Planificación", icon: Shield },
   { href: "/threat-simulation", label: "Simulación", icon: Swords },
   { href: "/ai-analyst", label: "AI Analyst", icon: Brain },
