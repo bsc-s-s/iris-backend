@@ -33,10 +33,8 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-iris-600 bg-iris-900">
-      <div className="flex items-center gap-3 border-b border-iris-600 px-6 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-iris-accent">
-          <Shield className="h-5 w-5 text-white" />
-        </div>
+      <div className="flex items-center gap-3 border-b border-iris-600 px-6 py-4">
+        <img src="/logo-sm.png" alt="IRIS" className="h-10 w-10 object-contain" />
         <div>
           <h1 className="text-sm font-semibold text-white">IRIS</h1>
           <p className="text-xs text-iris-400">Enterprise v5</p>

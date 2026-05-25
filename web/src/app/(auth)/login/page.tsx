@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
@@ -33,9 +33,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-iris-900 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-iris-accent">
-            <Shield className="h-7 w-7 text-white" />
-          </div>
+          <img src="/logo-md.png" alt="IRIS" className="mx-auto mb-4 h-24 w-24 object-contain" />
           <h1 className="text-xl font-bold text-white">IRIS Enterprise</h1>
           <p className="mt-1 text-sm text-iris-400">Arquitectura de Riesgo y Seguridad Integral</p>
         </div>
