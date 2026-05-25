@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
@@ -73,16 +72,9 @@ async function bootstrap() {
     }
   });
 
-  // Serve old SPA from public/
-  server.use(express.static(path.join(__dirname, '../../public')));
-
-  // SPA fallback: serve index.html for non-API GET requests
-  server.use((req: any, res: any, next: any) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/_next')) {
-      res.sendFile(path.join(__dirname, '../../public/index.html'), (err: any) => { if (err) next(); });
-    } else {
-      next();
-    }
+  // Root landing page mientras el frontend se despliega
+  server.get('/', (req: any, res: any) => {
+    res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRIS Enterprise</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#0a0e1a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}main{text-align:center;padding:2rem}h1{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}p{color:#94a3b8;margin:1rem 0 2rem}.btn{display:inline-block;padding:.75rem 2rem;border-radius:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font-weight:600;transition:opacity .2s}.btn:hover{opacity:.9}</style></head><body><main><h1>IRIS Enterprise</h1><p>Arquitectura de Riesgo y Seguridad Integral</p><a class="btn" href="/api/auth/login" onclick="return false">Sistema en línea — Próximamente</a><p style="margin-top:1.5rem;font-size:.8rem">API disponible en /api — <a href="/api/health" style="color:#3b82f6">Health</a></p></main></body></html>`);
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -90,7 +82,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
   logger.log(`IRIS Enterprise running on http://localhost:${port}`);
-  logger.log(`Serving legacy SPA from public/`);
   logger.log(`Legacy API: /api/health, /api/anthropic/messages, /api/supabase/*`);
 }
 bootstrap();
