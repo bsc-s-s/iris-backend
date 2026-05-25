@@ -8,7 +8,7 @@ import { PatternDetectionEngine } from '../../core/patternDetection';
 import { PredictionEngine } from '../../core/predictionEngine';
 import { PrismaService } from '../../prisma/prisma.service';
 
-@Controller('api/v1')
+@Controller('v1')
 export class V1Controller {
   constructor(
     private riskEngine: RiskEngine,

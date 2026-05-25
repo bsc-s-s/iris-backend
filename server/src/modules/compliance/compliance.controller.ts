@@ -4,7 +4,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ComplianceEvaluator } from './compliance.service';
 
-@Controller('api/v1/compliance')
+@Controller('v1/compliance')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class ComplianceController {
   constructor(private evaluator: ComplianceEvaluator) {}
