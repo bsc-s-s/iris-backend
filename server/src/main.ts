@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
 
@@ -18,9 +19,19 @@ async function bootstrap() {
   // Global prefix for enterprise API
   app.setGlobalPrefix('api');
 
-  // Legacy health check
-  app.use('/api/health', (req: any, res: any) => {
-    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL });
+  // Legacy health check + DB diagnosis
+  app.use('/api/health', async (req: any, res: any) => {
+    let dbStatus = 'unknown';
+    let userCount = -1;
+    try {
+      const prisma = app.get(PrismaService);
+      await prisma.$queryRaw`SELECT 1`;
+      userCount = await prisma.user.count();
+      dbStatus = 'connected';
+    } catch (e: any) {
+      dbStatus = 'error: ' + e.message.slice(0, 100);
+    }
+    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL, db: dbStatus, users: userCount });
   });
 
   // Legacy Groq proxy (old SPA uses /api/anthropic/messages)
