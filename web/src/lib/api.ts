@@ -8,31 +8,19 @@ type RequestOptions = {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, params } = options;
-
   let url = `${API_BASE}${path}`;
   if (params) {
     const qs = new URLSearchParams(params).toString();
     if (qs) url += `?${qs}`;
   }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
   const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
   if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(error.message || `API Error: ${res.status}`);
   }
-
   return res.json();
 }
 
@@ -57,6 +45,9 @@ async function v1Request<T>(path: string, options: RequestOptions = {}): Promise
 }
 
 export const v1 = {
+  intelligence: {
+    overview: () => v1Request<any>("/intelligence"),
+  },
   risk: {
     score: () => v1Request<any>("/risk/score"),
     analyze: (data: any) => v1Request<any>("/risk/analyze", { method: "POST", body: data }),
@@ -80,6 +71,16 @@ export const v1 = {
   },
   anomalies: {
     detect: (data: any) => v1Request<any>("/anomalies/detect", { method: "POST", body: data }),
+    overview: () => v1Request<any>("/anomalies/overview"),
+  },
+  predict: {
+    incidentProbability: () => v1Request<any>("/predict/incident-probability"),
+  },
+  correlations: {
+    all: () => v1Request<any>("/correlations"),
+  },
+  indexes: {
+    proprietary: () => v1Request<any>("/indexes"),
   },
   billing: {
     plans: () => v1Request<any[]>("/billing/plans"),
@@ -92,9 +93,6 @@ export const v1 = {
     providers: () => v1Request<string[]>("/sso/providers"),
     callback: (data: { provider: string; response: any }) =>
       v1Request<any>("/sso/callback", { method: "POST", body: data }),
-  },
-  predict: {
-    incidentProbability: () => v1Request<any>("/predict/incident-probability"),
   },
 };
 
