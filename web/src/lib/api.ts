@@ -62,6 +62,8 @@ export const v1 = {
     analyze: (data: any) => v1Request<any>("/risk/analyze", { method: "POST", body: data }),
     report: (id: string) => v1Request<any>(`/risk/report/${id}`),
     predict: (data?: any) => v1Request<any>("/risk/predict", { method: "POST", body: data || {} }),
+    organizationalPatterns: () => v1Request<any>("/risk/organizational-patterns"),
+    benchmark: () => v1Request<any>("/risk/benchmark"),
   },
   ai: {
     insight: (data: { question: string; contextType?: string; riskData?: any }) =>
@@ -90,6 +92,9 @@ export const v1 = {
     providers: () => v1Request<string[]>("/sso/providers"),
     callback: (data: { provider: string; response: any }) =>
       v1Request<any>("/sso/callback", { method: "POST", body: data }),
+  },
+  predict: {
+    incidentProbability: () => v1Request<any>("/predict/incident-probability"),
   },
 };
 
