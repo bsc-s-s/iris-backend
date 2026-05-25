@@ -18,9 +18,6 @@ async function bootstrap() {
   // Global prefix for enterprise API
   app.setGlobalPrefix('api');
 
-  // Body parser for legacy routes
-  server.use(express.json());
-
   // Legacy health check
   app.use('/api/health', (req: any, res: any) => {
     res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL });
