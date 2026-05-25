@@ -48,20 +48,20 @@ export class SsoService {
     });
   }
 
-  async initiateLogin(provider: string, orgSlug?: string) {
+  async initiateLogin(provider: string, orgSlug: string | undefined, baseUrl: string) {
     const org = await this.prisma.organization.findFirst({
       where: orgSlug ? { slug: orgSlug } : { id: process.env.DEFAULT_ORG_ID || undefined },
     });
     if (!org) throw new BadRequestException('Organization not found');
 
     if (provider === 'saml') {
-      return this.initiateSamlLogin(org.id);
+      return this.initiateSamlLogin(org.id, baseUrl);
     }
 
-    return this.initiateOidcLogin(provider, org.id);
+    return this.initiateOidcLogin(provider, org.id, baseUrl);
   }
 
-  async handleOidcCallback(provider: string, params: Record<string, string>) {
+  async handleOidcCallback(provider: string, params: Record<string, string>, baseUrl: string) {
     const { code, state } = params;
     if (!code || !state) throw new BadRequestException('Missing code or state');
 
@@ -81,8 +81,8 @@ export class SsoService {
 
       const oidcConfig = await client.discovery(server, clientId, clientSecret);
 
-      const callbackUrl = new URL(`${process.env.BACKEND_URL || 'http://localhost:3001'}/api/v1/sso/callback/${provider}`);
-      const currentUrl = new URL(`${process.env.BACKEND_URL || 'http://localhost:3001'}/api/v1/sso/callback/${provider}?code=${code}&state=${state}`);
+      const callbackUrl = `${baseUrl}/api/v1/sso/callback/${provider}`;
+      const currentUrl = new URL(`${callbackUrl}?code=${code}&state=${state}`);
 
       const tokens = await client.authorizationCodeGrant(
         oidcConfig,
@@ -122,7 +122,7 @@ export class SsoService {
     }
   }
 
-  async handleSamlCallback(body: Record<string, string>) {
+  async handleSamlCallback(body: Record<string, string>, baseUrl: string) {
     const samlResponse = body.SAMLResponse;
     if (!samlResponse) throw new BadRequestException('Missing SAMLResponse');
 
@@ -130,12 +130,11 @@ export class SsoService {
     if (!config) throw new BadRequestException('SAML provider not configured');
 
     try {
-      const backUrl = process.env.BACKEND_URL || 'http://localhost:3001';
       const sp = samlify.ServiceProvider({
-        entityID: `${backUrl}/api/v1/sso/callback/saml`,
+        entityID: `${baseUrl}/api/v1/sso/callback/saml`,
         assertionConsumerService: [{
           Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-          Location: `${backUrl}/api/v1/sso/callback/saml`,
+          Location: `${baseUrl}/api/v1/sso/callback/saml`,
         }],
       });
 
@@ -168,7 +167,7 @@ export class SsoService {
     }
   }
 
-  private async initiateOidcLogin(provider: string, orgId: string) {
+  private async initiateOidcLogin(provider: string, orgId: string, baseUrl: string) {
     const config = await this.prisma.ssoConfig.findFirst({ where: { organizationId: orgId, provider, enabled: true } });
     if (!config) throw new BadRequestException(`SSO provider ${provider} not configured for this organization`);
 
@@ -188,7 +187,7 @@ export class SsoService {
     const state = client.randomState();
     const nonce = client.randomNonce();
 
-    const redirectUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/v1/sso/callback/${provider}`;
+    const redirectUri = `${baseUrl}/api/v1/sso/callback/${provider}`;
 
     const parameters: Record<string, string> = {
       redirect_uri: redirectUri,
@@ -206,16 +205,15 @@ export class SsoService {
     return { redirectUrl: redirectTo.href };
   }
 
-  private async initiateSamlLogin(orgId: string) {
+  private async initiateSamlLogin(orgId: string, baseUrl: string) {
     const config = await this.prisma.ssoConfig.findFirst({ where: { organizationId: orgId, provider: 'saml', enabled: true } });
     if (!config) throw new BadRequestException('SAML provider not configured for this organization');
 
-    const backUrl = process.env.BACKEND_URL || 'http://localhost:3001';
     const sp = samlify.ServiceProvider({
-      entityID: `${backUrl}/api/v1/sso/callback/saml`,
+      entityID: `${baseUrl}/api/v1/sso/callback/saml`,
       assertionConsumerService: [{
         Binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-        Location: `${backUrl}/api/v1/sso/callback/saml`,
+        Location: `${baseUrl}/api/v1/sso/callback/saml`,
       }],
     });
 
