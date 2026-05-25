@@ -11,6 +11,9 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const server = app.getHttpAdapter().getInstance() as express.Application;
 
+  // Trust proxy for Render (HTTPS termination)
+  server.set('trust proxy', 1);
+
   // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
