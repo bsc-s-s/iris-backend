@@ -54,7 +54,7 @@ services:
     plan: free
     branch: main
     buildCommand: cd web && npm install && npm run build
-    startCommand: cd web && npm run start -- -H 0.0.0.0
+    startCommand: cd web && node .next/standalone/server.js
     envVars:
       - key: NODE_VERSION
         value: 22
