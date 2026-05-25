@@ -39,3 +39,18 @@ services:
         value: "*"
       - key: FRONTEND_URL
         value: ""
+
+  - type: web
+    name: iris-frontend
+    runtime: node
+    repo: https://github.com/bsc-s-s/iris-backend
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: cd web && npm install && npm run build
+    startCommand: cd web && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NEXT_PUBLIC_API_URL
+        value: https://iris-backend-b9fw.onrender.com
