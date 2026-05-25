@@ -13,6 +13,10 @@ import { AuditModule } from './audit/audit.module';
 import { CoreModule } from './core/core.module';
 import { V1Module } from './api/v1/v1.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { EmailModule } from './modules/email/email.module';
+import { SsoModule } from './modules/sso/sso.module';
+import { MonitoringService } from './modules/analytics/monitoring.service';
 
 @Module({
   imports: [
@@ -29,7 +33,11 @@ import { ComplianceModule } from './modules/compliance/compliance.module';
     AuditModule,
     V1Module,
     ComplianceModule,
+    BillingModule,
+    EmailModule,
+    SsoModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, MonitoringService],
+  exports: [MonitoringService],
 })
 export class AppModule {}

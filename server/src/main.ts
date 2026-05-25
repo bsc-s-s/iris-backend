@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
@@ -18,6 +19,30 @@ async function bootstrap() {
 
   // Global prefix for enterprise API
   app.setGlobalPrefix('api');
+
+  // Swagger / OpenAPI
+  const config = new DocumentBuilder()
+    .setTitle('IRIS Enterprise API')
+    .setDescription('Arquitectura de Riesgo y Seguridad Integral — Intelligent Risk Intelligence System')
+    .setVersion('5.0.0')
+    .addBearerAuth()
+    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
+    .addTag('Auth', 'Autenticación y registro')
+    .addTag('Users', 'Gestión de usuarios')
+    .addTag('Organizations', 'Gestión de organizaciones')
+    .addTag('Assessments', 'Evaluaciones de riesgo')
+    .addTag('AI Analyst', 'Análisis con inteligencia artificial')
+    .addTag('Security Planning', 'Planificación estratégica de seguridad')
+    .addTag('Threat Simulation', 'Simulación de amenazas')
+    .addTag('Audit', 'Auditoría y trazabilidad')
+    .addTag('Risk v1', 'Motor de riesgo enterprise (API v1)')
+    .addTag('Compliance v1', 'Cumplimiento normativo (API v1)')
+    .setContact('BSC', 'https://burgoasecurity.com', 'brianburgoa@gmail.com')
+    .setLicense('Proprietary', 'https://iris.enterprise/license')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+  logger.log('Swagger docs: /api/docs');
 
   // Legacy health check + DB diagnosis
   app.use('/api/health', async (req: any, res: any) => {

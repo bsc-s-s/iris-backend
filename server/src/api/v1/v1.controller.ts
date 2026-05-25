@@ -1,3 +1,4 @@
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Controller, Get, Post, Body, Param, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +9,7 @@ import { PatternDetectionEngine } from '../../core/patternDetection';
 import { PredictionEngine } from '../../core/predictionEngine';
 import { PrismaService } from '../../prisma/prisma.service';
 
+@ApiTags('Enterprise API v1')
 @Controller('v1')
 export class V1Controller {
   constructor(
@@ -20,6 +22,9 @@ export class V1Controller {
 
   @Get('risk/score')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener score de riesgo actual de la organización' })
+  @ApiResponse({ status: 200, description: 'Score de riesgo con categorías y nivel' })
   async getRiskScore(@CurrentUser('organizationId') orgId: string) {
     const assessments = await this.prisma.assessment.findMany({
       where: { organizationId: orgId, status: 'completed' },
@@ -51,6 +56,9 @@ export class V1Controller {
 
   @Post('risk/analyze')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Analizar factores de riesgo personalizados' })
+  @ApiResponse({ status: 201, description: 'Resultado del análisis de riesgo' })
   async analyzeRisk(@Body() body: { factors?: any[]; categoryScores?: Record<string, number> }, @CurrentUser('organizationId') orgId: string) {
     const factors = (body.factors || []).map((f: any) => ({
       name: f.name || f.factor || 'Unknown factor',
@@ -68,6 +76,10 @@ export class V1Controller {
 
   @Get('risk/report/:id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener reporte detallado de riesgo por ID de evaluación' })
+  @ApiResponse({ status: 200, description: 'Reporte completo con análisis, vulnerabilidades y facility' })
+  @ApiResponse({ status: 404, description: 'Assessment no encontrado' })
   async getRiskReport(@Param('id') id: string) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id },
@@ -106,6 +118,9 @@ export class V1Controller {
 
   @Post('ai/insight')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generar insight con IA (Groq Llama 3.3)' })
+  @ApiResponse({ status: 201, description: 'Respuesta del asistente IA' })
   async getAiInsight(@Body() body: { question: string; contextType?: string; riskData?: any }, @CurrentUser() user: any) {
     const result = await this.aiEngine.generateInsight({
       organizationId: user.organizationId,
@@ -118,6 +133,9 @@ export class V1Controller {
 
   @Get('analytics/dashboard')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener analytics del dashboard (stats, forecast, actividad)' })
+  @ApiResponse({ status: 200, description: 'Dashboard analytics completo' })
   async getDashboardAnalytics(@CurrentUser('organizationId') orgId: string) {
     const [assessments, users, protocols, auditLogs] = await Promise.all([
       this.prisma.assessment.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } }),
@@ -157,6 +175,9 @@ export class V1Controller {
 
   @Post('risk/predict')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Predecir riesgo a 30/60/90 días basado en scores históricos' })
+  @ApiResponse({ status: 201, description: 'Pronóstico de riesgo con tendencia y confianza' })
   async predictRisk(@Body() body: { scores?: { date: string; score: number }[] }, @CurrentUser('organizationId') orgId: string) {
     const historicalScores = body.scores?.map((s) => ({
       date: s.date,
@@ -184,6 +205,9 @@ export class V1Controller {
 
   @Post('anomalies/detect')
   @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Detectar anomalías en eventos y métricas' })
+  @ApiResponse({ status: 201, description: 'Anomalías detectadas con patrones identificados' })
   async detectAnomalies(@Body() body: any) {
     return this.patternEngine.analyze({
       events: body.events || [],
