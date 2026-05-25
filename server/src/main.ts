@@ -29,9 +29,9 @@ async function bootstrap() {
       userCount = await prisma.user.count();
       dbStatus = 'connected';
     } catch (e: any) {
-      dbStatus = 'error: ' + e.message.slice(0, 100);
+      dbStatus = 'error: ' + e.message.slice(0, 200);
     }
-    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL, db: dbStatus, users: userCount });
+    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL, db: dbStatus, users: userCount, dbName: process.env.DB_NAME, dbHost: process.env.DB_HOST, dbUser: process.env.DB_USER });
   });
 
   // Legacy Groq proxy (old SPA uses /api/anthropic/messages)
