@@ -13,6 +13,7 @@ export default function AuditPage() {
   const [logs, setLogs] = useState<any>({ items: [] });
   const [stats, setStats] = useState<any>(null);
   const [entityFilter, setEntityFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     api.audit.list(entityFilter ? { entity: entityFilter } : undefined).then(setLogs).catch(() => {});
@@ -46,7 +47,7 @@ export default function AuditPage() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-iris-400" />
-          <input className="input pl-9" placeholder="Buscar en auditoría..." />
+          <input className="input pl-9" placeholder="Buscar en auditoría..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="input w-40">
           <option value="">Todo</option>
@@ -66,7 +67,7 @@ export default function AuditPage() {
               <p className="text-sm text-iris-400">No hay eventos de auditoría</p>
             </div>
           ) : (
-            logs.items?.map((log: any) => (
+            logs.items?.filter((log: any) => !searchTerm || log.description?.toLowerCase().includes(searchTerm.toLowerCase()) || log.entity?.toLowerCase().includes(searchTerm.toLowerCase()) || log.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || ACTION_LABELS[log.action]?.toLowerCase().includes(searchTerm.toLowerCase())).map((log: any) => (
               <div key={log.id} className="flex items-center justify-between rounded-lg px-4 py-2.5 hover:bg-iris-600/30">
                 <div className="flex items-center gap-3">
                   <span className="badge badge-medium text-[10px]">{ACTION_LABELS[log.action] || log.action}</span>
