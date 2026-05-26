@@ -23,7 +23,19 @@ export class Iso27001Service {
   }, userId: string) {
     const config = await this.prisma.backupConfig.upsert({
       where: { organizationId: orgId },
-      create: { ...data, organizationId: orgId, backupTypes: data.backupTypes || ['full'] },
+      create: {
+        enabled: data.enabled ?? true,
+        frequency: data.frequency || 'daily',
+        retentionDays: data.retentionDays ?? 30,
+        encryptionEnabled: data.encryptionEnabled ?? true,
+        encryptionAlgorithm: data.encryptionAlgorithm || 'AES-256-GCM',
+        storageLocation: data.storageLocation || 's3',
+        storageBucket: data.storageBucket,
+        storageRegion: data.storageRegion,
+        backupTypes: data.backupTypes || ['full'],
+        pointInTimeRecovery: data.pointInTimeRecovery ?? false,
+        organizationId: orgId,
+      },
       update: data,
     });
     await this.audit.log({ action: 'backup.config.update', entity: 'backupConfig', entityId: config.id, description: 'Configuración de backup actualizada', userId, organizationId: orgId, result: 'success' });

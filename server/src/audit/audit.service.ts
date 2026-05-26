@@ -12,6 +12,9 @@ export class AuditService {
     description?: string;
     metadata?: any;
     ipAddress?: string;
+    userAgent?: string;
+    sessionId?: string;
+    result?: string;
     userId?: string;
     organizationId: string;
   }) {
