@@ -75,35 +75,54 @@ export class SsoService {
     if (!config) throw new BadRequestException(`SSO provider ${provider} not configured`);
 
     try {
-      const server = new URL(config.issuer || process.env[`SSO_${provider.toUpperCase()}_ISSUER`] || '');
+      const issuerUrl = config.issuer || process.env[`SSO_${provider.toUpperCase()}_ISSUER`] || '';
       const clientId = config.clientId || process.env[`SSO_${provider.toUpperCase()}_CLIENT_ID`] || '';
       const clientSecret = config.clientSecret || process.env[`SSO_${provider.toUpperCase()}_CLIENT_SECRET`] || '';
 
-      const oidcConfig = await client.discovery(server, clientId, clientSecret);
+      if (!issuerUrl || !clientId) {
+        throw new BadRequestException(`SSO provider ${provider} is not fully configured`);
+      }
 
       const callbackUrl = `${baseUrl}/api/v1/sso/callback/${provider}`;
-      const currentUrl = new URL(`${callbackUrl}?code=${code}&state=${state}`);
 
-      const tokens = await client.authorizationCodeGrant(
-        oidcConfig,
-        currentUrl,
-        { pkceCodeVerifier: stored.codeVerifier, expectedState: state, expectedNonce: stored.nonce },
-      );
+      // Use direct fetch to exchange code for tokens (bypasses openid-client library issues)
+      const tokenBody = new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: callbackUrl,
+        grant_type: 'authorization_code',
+        code_verifier: stored.codeVerifier,
+      }).toString();
 
-      let email = '';
-      let name = '';
+      this.logger.log(`Token exchange to ${issuerUrl}`);
+      const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenBody,
+      });
 
-      if (tokens.id_token) {
-        const parts = tokens.id_token.split('.');
-        if (parts.length !== 3) throw new UnauthorizedException('Invalid ID token');
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-        email = payload.email || payload.preferred_username || '';
-        name = payload.name || payload.given_name || payload.preferred_username || email.split('@')[0] || 'SSO User';
-      } else {
-        const userInfo = await client.fetchUserInfo(oidcConfig, tokens.access_token, tokens.id_token!);
-        email = userInfo.email || userInfo.preferred_username || '';
-        name = userInfo.name || userInfo.given_name || email.split('@')[0] || 'SSO User';
+      const tokenData = await tokenResp.json();
+      this.logger.log(`Token response status: ${tokenResp.status}`);
+
+      if (!tokenResp.ok) {
+        this.logger.error(`Google token error: ${JSON.stringify(tokenData)}`);
+        throw new UnauthorizedException(`Token exchange failed: ${tokenData.error || tokenResp.statusText}`);
       }
+
+      if (!tokenData.id_token) {
+        throw new UnauthorizedException('No id_token in response');
+      }
+
+      // Decode id_token payload
+      const parts = tokenData.id_token.split('.');
+      if (parts.length !== 3) throw new UnauthorizedException('Invalid ID token format');
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+
+      this.logger.log(`ID token claims: ${JSON.stringify(Object.keys(payload))}`);
+
+      const email = payload.email || payload.preferred_username || '';
+      const name = payload.name || payload.given_name || payload.preferred_username || email.split('@')[0] || 'SSO User';
 
       if (!email) throw new UnauthorizedException('Email not provided by identity provider');
 
