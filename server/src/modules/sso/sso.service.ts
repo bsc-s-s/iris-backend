@@ -248,7 +248,10 @@ export class SsoService {
   }
 
   private async findOrCreateUser(email: string, name: string, organizationId: string) {
-    let user = await this.prisma.user.findUnique({ where: { email } });
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, role: true, title: true, isActive: true, passwordHash: true, organizationId: true },
+    });
 
     if (!user) {
       user = await this.prisma.user.create({
@@ -259,6 +262,7 @@ export class SsoService {
           role: 'viewer',
           organizationId,
         },
+        select: { id: true, email: true, name: true, role: true, title: true, isActive: true, passwordHash: true, organizationId: true },
       });
     }
 

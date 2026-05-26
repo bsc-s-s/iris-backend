@@ -15,13 +15,42 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
-  // Push Prisma schema on startup (creates missing columns/tables)
+  // Sync database schema - add missing columns if they don't exist
   try {
-    const { execSync } = require('child_process');
-    execSync('npx prisma db push --accept-data-loss', { cwd: __dirname + '/..', stdio: 'pipe', timeout: 30000, env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASS || '')}@${process.env.DB_HOST}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'postgres'}?sslmode=require` } });
-    logger.log('Prisma schema synced');
+    const prisma = app.get(PrismaService);
+    const migrations = [
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "consentGiven" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "consentGivenAt" TIMESTAMP(3)`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "privacyAccepted" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "privacyAcceptedAt" TIMESTAMP(3)`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "dataProcessingConsent" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "marketingConsent" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "dataProcessingConsentAt" TIMESTAMP(3)`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "marketingConsentAt" TIMESTAMP(3)`,
+      `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "userAgent" TEXT`,
+      `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "sessionId" TEXT`,
+      `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "result" TEXT NOT NULL DEFAULT 'success'`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "gdprCompliant" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "iso27001Compliant" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "encryptionEnabled" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "backupEnabled" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "drpEnabled" BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dataRetentionDays" INTEGER NOT NULL DEFAULT 365`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "privacyPolicyUrl" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "privacyPolicyVersion" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "privacyPolicyAcceptedAt" TIMESTAMP(3)`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoName" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoEmail" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoPhone" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoTitle" TEXT`,
+      `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoAppointedAt" TIMESTAMP(3)`,
+    ];
+    for (const sql of migrations) {
+      await prisma.$executeRawUnsafe(sql);
+    }
+    logger.log('Schema sync completed');
   } catch (e: any) {
-    logger.warn(`Schema sync skipped: ${e.message?.substring(0, 200)}`);
+    logger.warn(`Schema sync error (non-blocking): ${e.message?.substring(0, 200)}`);
   }
   try {
     const helmetModule = await import('helmet');

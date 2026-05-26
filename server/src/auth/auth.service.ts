@@ -15,8 +15,14 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
+  private readonly userSelect = {
+    id: true, email: true, name: true, role: true, title: true,
+    passwordHash: true, isActive: true, lastLoginAt: true,
+    organizationId: true, createdAt: true, mfaEnabled: true,
+  } as const;
+
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, select: { id: true } });
     if (existing) throw new ConflictException('Email already registered');
 
     const org = await this.prisma.organization.create({
@@ -36,6 +42,7 @@ export class AuthService {
         role: 'admin',
         organizationId: org.id,
       },
+      select: { id: true, email: true, name: true, role: true, title: true, organizationId: true },
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, org.id);
@@ -50,7 +57,8 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
-      include: { organization: true },
+      include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
+      select: { id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, organizationId: true },
     });
 
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
@@ -91,7 +99,11 @@ export class AuthService {
   }
 
   async validateUser(id: string) {
-    return this.prisma.user.findUnique({ where: { id }, include: { organization: true } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
+      select: { id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, mfaEnabled: true, organizationId: true, createdAt: true },
+    });
   }
 
   private async generateTokens(userId: string, email: string, role: string, organizationId: string) {
