@@ -5,7 +5,6 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
-import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,19 +14,25 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
-  // Security headers with Helmet
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    noSniff: true,
-    xssFilter: true,
-    hidePoweredBy: true,
-    frameguard: { action: 'deny' },
-    permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-  }));
+  // Security headers with Helmet (dynamic import for ESM compat)
+  try {
+    const helmet = await import('helmet');
+    app.use(helmet.default({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      noSniff: true,
+      xssFilter: true,
+      hidePoweredBy: true,
+      frameguard: { action: 'deny' },
+      permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    }));
+    logger.log('Helmet security headers enabled');
+  } catch (e: any) {
+    logger.warn(`Helmet not available: ${e.message}`);
+  }
 
   // CORS
   app.enableCors({
