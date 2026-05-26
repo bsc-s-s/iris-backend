@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,10 +15,10 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
-  // Security headers with Helmet (dynamic import for ESM compat)
+  // Security headers with Helmet (try CJS require, fallback to dynamic import for ESM)
   try {
-    const helmet = await import('helmet');
-    app.use(helmet.default({
+    const helmet = require('helmet');
+    app.use(helmet({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -31,7 +32,26 @@ async function bootstrap() {
     }));
     logger.log('Helmet security headers enabled');
   } catch (e: any) {
-    logger.warn(`Helmet not available: ${e.message}`);
+    logger.warn(`Helmet not available (CJS): ${e.message}`);
+    try {
+      const helmetModule = await import('helmet');
+      const helmet = helmetModule.default || helmetModule;
+      app.use(helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        noSniff: true,
+        xssFilter: true,
+        hidePoweredBy: true,
+        frameguard: { action: 'deny' },
+        permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+      }));
+      logger.log('Helmet security headers enabled (ESM)');
+    } catch (e2: any) {
+      logger.warn(`Helmet not available (ESM): ${e2.message}`);
+    }
   }
 
   // CORS
@@ -169,6 +189,7 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   const port = process.env.PORT || 4000;
   await app.listen(port);

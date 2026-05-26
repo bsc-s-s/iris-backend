@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     branch: main
-    buildCommand: cd server && npm install && npx prisma generate && npx nest build
+    buildCommand: cd server && npm install && npx prisma generate && npx prisma db push --accept-data-loss && npx nest build
     startCommand: cd server && node dist/main.js
     envVars:
       - key: NODE_VERSION
