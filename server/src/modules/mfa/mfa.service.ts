@@ -10,12 +10,11 @@ export class MfaService {
     const secret = crypto.randomBytes(20).toString('hex');
     const recoveryCodes = this.generateRecoveryCodes();
 
-    // Store hashed secret
-    const hashedSecret = crypto.createHash('sha256').update(secret).digest('hex');
+    // Store raw secret (no hashing — TOTP algorithm needs the original)
     await this.prisma.user.update({
       where: { id: userId },
       data: {
-        mfaSecret: hashedSecret,
+        mfaSecret: secret,
         mfaRecoveryCodes: recoveryCodes.map((c) => crypto.createHash('sha256').update(c).digest('hex')),
         mfaEnabled: false,
       },
