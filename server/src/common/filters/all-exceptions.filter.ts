@@ -18,9 +18,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error(exception.stack);
     }
 
+    const errorMessage = exception instanceof Error ? exception.message : 'Unknown error';
+    const errorStack = exception instanceof Error ? exception.stack?.split('\n').slice(0, 5).join('\n') : '';
+
     response.status(status).json({
       statusCode: status,
-      message: typeof message === 'string' ? message : (message as any).message || 'Internal server error',
+      message: typeof message === 'string' ? message : (message as any).message || errorMessage,
+      errorType: exception?.constructor?.name || 'Unknown',
+      detail: errorMessage,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

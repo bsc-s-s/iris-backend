@@ -15,43 +15,22 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
-  // Security headers with Helmet (try CJS require, fallback to dynamic import for ESM)
+  // Security headers with Helmet (graceful fallback for ESM-only v8)
   try {
-    const helmet = require('helmet');
+    const helmetModule = await import('helmet');
+    const helmet = (helmetModule as any).default || helmetModule;
     app.use(helmet({
-      contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: false, crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-      noSniff: true,
-      xssFilter: true,
-      hidePoweredBy: true,
+      noSniff: true, xssFilter: true, hidePoweredBy: true,
       frameguard: { action: 'deny' },
       permittedCrossDomainPolicies: { permittedPolicies: 'none' },
     }));
-    logger.log('Helmet security headers enabled');
+    logger.log('Helmet enabled');
   } catch (e: any) {
-    logger.warn(`Helmet not available (CJS): ${e.message}`);
-    try {
-      const helmetModule = await import('helmet');
-      const helmet = helmetModule.default || helmetModule;
-      app.use(helmet({
-        contentSecurityPolicy: false,
-        crossOriginEmbedderPolicy: false,
-        crossOriginResourcePolicy: { policy: 'cross-origin' },
-        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-        noSniff: true,
-        xssFilter: true,
-        hidePoweredBy: true,
-        frameguard: { action: 'deny' },
-        permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-      }));
-      logger.log('Helmet security headers enabled (ESM)');
-    } catch (e2: any) {
-      logger.warn(`Helmet not available (ESM): ${e2.message}`);
-    }
+    logger.warn(`Helmet unavailable (non-blocking): ${e.message}`);
   }
 
   // CORS
