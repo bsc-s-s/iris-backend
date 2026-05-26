@@ -57,8 +57,10 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
-      include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
-      select: { id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, organizationId: true },
+      select: {
+        id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, organizationId: true,
+        organization: { select: { id: true, name: true, slug: true, plan: true } },
+      },
     });
 
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
@@ -101,8 +103,10 @@ export class AuthService {
   async validateUser(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
-      include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
-      select: { id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, mfaEnabled: true, organizationId: true, createdAt: true },
+      select: {
+        id: true, email: true, name: true, role: true, title: true, passwordHash: true, isActive: true, mfaEnabled: true, organizationId: true, createdAt: true,
+        organization: { select: { id: true, name: true, slug: true, plan: true } },
+      },
     });
   }
 
