@@ -110,7 +110,35 @@ async function bootstrap() {
 
   // Root landing page mientras el frontend se despliega
   server.get('/', (req: any, res: any) => {
-    res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRIS Enterprise</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#0a0e1a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}main{text-align:center;padding:2rem}h1{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}p{color:#94a3b8;margin:1rem 0 2rem}.btn{display:inline-block;padding:.75rem 2rem;border-radius:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font-weight:600;transition:opacity .2s}.btn:hover{opacity:.9}</style></head><body><main><h1>IRIS Enterprise</h1><p>Arquitectura de Riesgo y Seguridad Integral</p><a class="btn" href="/api/auth/login" onclick="return false">Sistema en línea — Próximamente</a><p style="margin-top:1.5rem;font-size:.8rem">API disponible en /api — <a href="/api/health" style="color:#3b82f6">Health</a></p></main></body></html>`);
+    res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRIS Enterprise</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#0a0e1a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}main{text-align:center;padding:2rem}h1{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}p{color:#94a3b8;margin:1rem 0 2rem}.btn{display:inline-block;padding:.75rem 2rem;border-radius:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font-weight:600;transition:opacity .2s}.btn:hover{opacity:.9}</style></head><body><main><h1>IRIS Enterprise</h1><p>Arquitectura de Riesgo y Seguridad Integral</p><a class="btn" href="/login">Ingresar al sistema</a><p style="margin-top:1.5rem;font-size:.8rem">API <a href="/api/health" style="color:#3b82f6">Health</a> · <a href="/api/docs" style="color:#3b82f6">Swagger</a></p></main></body></html>`);
+  });
+
+  // Proxy non-API requests to the frontend (Next.js)
+  server.use(async (req: any, res: any, next: any) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/.') || req.method === 'OPTIONS') return next();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const target = `${frontendUrl}${req.originalUrl || req.url}`;
+    try {
+      const headers: Record<string, string> = {
+        'accept': req.headers.accept || 'text/html,*/*',
+        'user-agent': req.headers['user-agent'] || 'IRIS-Proxy/1.0',
+      };
+      if (req.headers.cookie) headers['cookie'] = req.headers.cookie;
+      if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
+      const resp = await fetch(target, {
+        method: req.method,
+        headers,
+        body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body || {}) : undefined,
+      });
+      const text = await resp.text();
+      const safe: Record<string, string> = {};
+      for (const [k, v] of resp.headers) {
+        if (['content-type', 'content-length', 'cache-control', 'etag', 'set-cookie'].includes(k.toLowerCase())) safe[k] = v;
+      }
+      res.status(resp.status).set(safe).send(text);
+    } catch (e: any) {
+      next();
+    }
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
