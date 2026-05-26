@@ -16,6 +16,24 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // GDPR & Compliance flags
+  gdprCompliant       Boolean @default(false)
+  iso27001Compliant   Boolean @default(false)
+  encryptionEnabled   Boolean @default(false)
+  backupEnabled       Boolean @default(false)
+  drpEnabled          Boolean @default(false)
+  dataRetentionDays   Int     @default(365)
+  privacyPolicyUrl    String?
+  privacyPolicyVersion String?
+  privacyPolicyAcceptedAt DateTime?
+
+  // DPO
+  dpoName       String?
+  dpoEmail      String?
+  dpoPhone      String?
+  dpoTitle      String?
+  dpoAppointedAt DateTime?
+
   users       User[]
   facilities  Facility[]
   assessments Assessment[]
@@ -28,6 +46,21 @@ model Organization {
   notificationConfig NotificationConfig?
   apiKeys        ApiKey[]
   webhookEndpoints WebhookEndpoint[]
+
+  // New GDPR/ISO relations
+  dpias               DataProcessingRecord[]
+  dataExports         DataExport[]
+  consentRecords      ConsentRecord[]
+  internationalTransfers InternationalTransfer[]
+  userConsents        UserConsent[]
+  backupConfig        BackupConfig?
+  disasterRecoveryPlan DisasterRecoveryPlan?
+  cloudProviders      CloudProvider[]
+  privacyPolicies     PrivacyPolicy[]
+  dataSubjectRequests DataSubjectRequest[]
+  encryptionKeys      EncryptionKey[]
+  sensitiveFields     SensitiveField[]
+  dataRetentionPolicies DataRetentionPolicy[]
 }
 
 model User {
@@ -47,9 +80,27 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  createdAssessments Assessment[] @relation("AssessmentCreator")
-  auditLogs          AuditLog[]
-  refreshTokens      RefreshToken[]
+  // GDPR & Privacy
+  consentGiven          Boolean @default(false)
+  consentGivenAt        DateTime?
+  privacyAccepted       Boolean @default(false)
+  privacyAcceptedAt     DateTime?
+  dataProcessingConsent Boolean @default(false)
+  marketingConsent      Boolean @default(false)
+  dataProcessingConsentAt DateTime?
+  marketingConsentAt    DateTime?
+
+  createdAssessments    Assessment[] @relation("AssessmentCreator")
+  auditLogs             AuditLog[]
+  refreshTokens         RefreshToken[]
+  sessions              UserSession[]
+  userConsents          UserConsent[] @relation("UserConsentUser")
+  consentRecords        ConsentRecord[] @relation("UserConsentRecord")
+  dataSubjectRequests   DataSubjectRequest[] @relation("DataSubjectOwner")
+  dsrReviewed           DataSubjectRequest[] @relation("DataSubjectReviewer")
+  dpiaCreated           DataProcessingRecord[] @relation("DataProcessingRecordCreator")
+  dpiaReviewed          DataProcessingRecord[] @relation("DataProcessingRecordReviewer")
+  dataExportRequests    DataExport[] @relation("DataExportRequester")
 
   @@index([organizationId])
   @@index([email])
@@ -220,6 +271,9 @@ model AuditLog {
   description    String?
   metadata       Json?
   ipAddress      String?
+  userAgent      String?
+  sessionId      String?
+  result         String   @default("success") // success, failure, denied
   userId         String?
   user           User?    @relation(fields: [userId], references: [id])
   organizationId String
@@ -229,6 +283,9 @@ model AuditLog {
   @@index([organizationId])
   @@index([userId])
   @@index([createdAt])
+  @@index([action])
+  @@index([entity])
+  @@index([result])
 }
 
 model Subscription {
@@ -358,4 +415,351 @@ model WebhookEvent {
   @@index([endpointId])
   @@index([status])
   @@index([nextRetryAt])
+}
+
+// ================ GDPR & ENTERPRISE COMPLIANCE MODELS ================
+
+/// Data Protection Impact Assessment (DPIA) - GDPR Art 35
+model DataProcessingRecord {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  status          String   @default("draft") // draft, in_review, approved, rejected
+
+  // Data types processed
+  dataCategories  Json     // string[] of data categories (personal, sensitive, financial, etc.)
+  dataSubjects    Json     // string[] of data subject types (employees, customers, vendors)
+  processingPurpose String
+  legalBasis      String   // consent, contract, legal_obligation, vital_interests, public_task, legitimate_interests
+
+  // Risk assessment
+  riskLevel       String   @default("low") // low, medium, high, critical
+  risks           Json?    // [{risk: string, likelihood: string, impact: string, mitigation: string}]
+  mitigations     Json?    // [{measure: string, status: string, owner: string}]
+  aiImpact        Boolean  @default(false)
+  aiDescription   String?
+
+  // Third-party processors
+  processors      Json?    // [{name: string, purpose: string, country: string, safeguards: string}]
+  internationalTransfers Boolean @default(false)
+  transferSafeguards String?
+
+  // Review
+  reviewedById    String?
+  reviewedBy      User?    @relation("DataProcessingRecordReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  reviewNotes     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  createdById     String?
+  createdBy       User?    @relation("DataProcessingRecordCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([riskLevel])
+}
+
+/// Data Portability Export - GDPR Art 20
+model DataExport {
+  id             String   @id @default(cuid())
+  format         String   @default("json") // json, csv, pdf
+  scope          String   // all, assessments, profile, audit, compliance
+  status         String   @default("pending") // pending, processing, completed, failed
+  fileUrl        String?
+  fileSize       Int?
+  encryptionKeyId String?
+  encryptionKey  EncryptionKey? @relation(fields: [encryptionKeyId], references: [id])
+  expiresAt      DateTime?
+  completedAt    DateTime?
+  failureReason  String?
+  createdAt      DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  requestedById  String?
+  requestedBy    User?    @relation("DataExportRequester", fields: [requestedById], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+/// GDPR Consent Record - GDPR Art 7
+model ConsentRecord {
+  id             String   @id @default(cuid())
+  type           String   // data_processing, marketing, cookies, analytics, third_party
+  status         String   @default("pending") // pending, granted, withdrawn
+  ipAddress      String?
+  userAgent      String?
+  grantedAt      DateTime?
+  withdrawnAt    DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+
+  userId         String?
+  user           User?    @relation("UserConsentRecord", fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([type])
+}
+
+/// User Consent Management
+model UserConsent {
+  id             String   @id @default(cuid())
+  type           String   // privacy_policy, terms_of_service, data_processing, marketing, cookies
+  version        String
+  accepted       Boolean  @default(false)
+  acceptedAt     DateTime?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  userId         String
+  user           User     @relation("UserConsentUser", fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, type, version])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+/// International Data Transfers - GDPR Art 44-49
+model InternationalTransfer {
+  id             String   @id @default(cuid())
+  thirdParty     String   // name of recipient
+  country        String
+  purpose        String
+  dataCategories Json     // string[]
+  legalMechanism String   // adequacy_decision, scc, bcr, consent, derogation
+  safeguards     Json?    // [{type: string, description: string}]
+  status         String   @default("active") // active, expired, revoked
+  riskAssessed   Boolean  @default(false)
+  riskLevel      String   @default("medium") // low, medium, high
+  expiryDate     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([country])
+}
+
+/// Privacy Policy Versioning
+model PrivacyPolicy {
+  id             String   @id @default(cuid())
+  version        String
+  title          String
+  content        String   // Markdown/content of the policy
+  effectiveDate  DateTime
+  required       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, version])
+  @@index([organizationId])
+}
+
+/// Data Subject Request (Right to be Forgotten, Access, Rectification, etc.)
+model DataSubjectRequest {
+  id             String   @id @default(cuid())
+  type           String   // access, rectification, erasure, restriction, portability, objection
+  status         String   @default("pending") // pending, processing, completed, rejected
+  description    String?
+  dataIdentified Json?    // {assessments: int, auditLogs: int, ...}
+  completedAt    DateTime?
+  rejectionReason String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userId         String
+  user           User     @relation("DataSubjectOwner", fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  reviewedById   String?
+  reviewedBy     User?    @relation("DataSubjectReviewer", fields: [reviewedById], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
+
+// ================ ISO 27001 MODELS ================
+
+/// User Sessions for session management & revocation
+model UserSession {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  refreshTokenId String?
+  ipAddress      String?
+  userAgent      String?
+  deviceInfo     String?
+  location       String?
+  isActive       Boolean  @default(true)
+  lastActivityAt DateTime @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  revokedReason  String?
+  createdAt      DateTime @default(now())
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([token])
+  @@index([isActive])
+}
+
+/// Backup Configuration - ISO 27001 A.12.3
+model BackupConfig {
+  id                  String   @id @default(cuid())
+  enabled             Boolean  @default(true)
+  frequency           String   @default("daily") // hourly, daily, weekly, monthly
+  retentionDays       Int      @default(30)
+  encryptionEnabled   Boolean  @default(true)
+  encryptionAlgorithm String   @default("AES-256-GCM")
+  storageLocation     String   // s3, gcs, azure, local
+  storageBucket       String?
+  storageRegion       String?
+  lastBackupAt        DateTime?
+  lastBackupSize      Int?
+  lastBackupStatus    String?  // success, failed, in_progress
+  nextBackupAt        DateTime?
+  backupTypes         Json     // ["full", "incremental", "differential"]
+  pointInTimeRecovery Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organizationId      String   @unique
+  organization        Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+/// Disaster Recovery Plan - ISO 27001 A.17
+model DisasterRecoveryPlan {
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+  status             String   @default("draft") // draft, reviewed, approved, tested
+  rto                Int      // Recovery Time Objective (minutes)
+  rpo                Int      // Recovery Point Objective (minutes)
+  priority           String   @default("medium") // critical, high, medium, low
+  scope              Json     // {systems: string[], data: string[], locations: string[]}
+  procedures         Json?    // [{step: int, action: string, owner: string, duration: string}]
+  contacts           Json?    // [{name: string, role: string, phone: string, email: string}]
+  lastTestedAt       DateTime?
+  testResults        Json?
+  approvedById       String?
+  approvedAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organizationId     String   @unique
+  organization       Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+/// Cloud Provider Registry - ISO 27001 A.11 (Physical Security)
+model CloudProvider {
+  id                String   @id @default(cuid())
+  name              String
+  providerType      String   // iaas, paas, saas, hosting, cdn, email, ai
+  description       String?
+  serviceUrl        String?
+  dataCenters       Json?    // [{location: string, country: string, region: string}]
+  certifications    String[] // ["ISO27001", "SOC2", "GDPR", "PCI-DSS", "FedRAMP"]
+  complianceLevel   String   @default("none") // none, basic, medium, high, certified
+  euDataBoundary    Boolean  @default(false) // data stays within EU
+  contractSigned    Boolean  @default(false)
+  contractFileUrl   String?
+  slaUrl            String?
+  dpiaRequired      Boolean  @default(false)
+  dpiaCompleted     Boolean  @default(false)
+  status            String   @default("active") // active, inactive, pending_review, terminated
+  riskLevel         String   @default("medium") // low, medium, high, critical
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([providerType])
+}
+
+/// Encryption Key Management
+model EncryptionKey {
+  id             String   @id @default(cuid())
+  name           String
+  algorithm      String   @default("AES-256-GCM")
+  keyId          String   @unique
+  publicKey      String?
+  status         String   @default("active") // active, expired, revoked, rotated
+  purpose        String   // data-at-rest, field-level, backup, transport, signing
+  expiresAt      DateTime?
+  rotatedAt      DateTime?
+  rotatedFromId  String?  // previous key if rotated
+  createdAt      DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  dataExports    DataExport[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([purpose])
+}
+
+/// Sensitive/PII Field Registry
+model SensitiveField {
+  id             String   @id @default(cuid())
+  entity         String   // user, assessment, facility, etc.
+  field          String   // email, name, address, notes, etc.
+  dataType       String   // pii, sensitive, financial, health, biometric
+  classification String   // public, internal, confidential, restricted
+  encryption     Boolean  @default(false)
+  masking        Boolean  @default(false)
+  retentionDays  Int?
+  justification  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, entity, field])
+  @@index([organizationId])
+  @@index([dataType])
+}
+
+/// Data Retention Policy
+model DataRetentionPolicy {
+  id             String   @id @default(cuid())
+  dataCategory   String   // audit_logs, assessments, user_data, consent, backups, reports
+  retentionDays  Int
+  action         String   @default("delete") // delete, anonymize, archive
+  legalHold      Boolean  @default(false)
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, dataCategory])
+  @@index([organizationId])
 }

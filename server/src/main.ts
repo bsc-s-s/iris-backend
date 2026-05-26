@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,10 +15,28 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
+  // Security headers with Helmet
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    noSniff: true,
+    xssFilter: true,
+    hidePoweredBy: true,
+    frameguard: { action: 'deny' },
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  }));
+
   // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-tenant-id', 'x-csrf-token', 'X-Webhook-Signature'],
+    exposedHeaders: ['Content-Range', 'X-Total-Count'],
+    maxAge: 86400,
   });
 
   // Global prefix for enterprise API
@@ -38,6 +57,9 @@ async function bootstrap() {
     .addTag('Security Planning', 'Planificación estratégica de seguridad')
     .addTag('Threat Simulation', 'Simulación de amenazas')
     .addTag('Audit', 'Auditoría y trazabilidad')
+    .addTag('GDPR', 'Cumplimiento Reglamento General de Protección de Datos')
+    .addTag('ISO 27001', 'Sistema de Gestión de Seguridad de la Información')
+    .addTag('Enterprise Compliance', 'Centro de cumplimiento unificado')
     .addTag('Risk v1', 'Motor de riesgo enterprise (API v1)')
     .addTag('Compliance v1', 'Cumplimiento normativo (API v1)')
     .setContact('BSC', 'https://burgoasecurity.com', 'brianburgoa@gmail.com')
@@ -110,7 +132,7 @@ async function bootstrap() {
 
   // Root landing page
   server.get('/', (req: any, res: any) => {
-    res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRIS Enterprise</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#0a0e1a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}main{text-align:center;padding:2rem}h1{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}p{color:#94a3b8;margin:1rem 0 2rem}.btn{display:inline-block;padding:.75rem 2rem;border-radius:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font-weight:600;transition:opacity .2s}.btn:hover{opacity:.9}</style></head><body><main><h1>IRIS Enterprise</h1><p>Arquitectura de Riesgo y Seguridad Integral</p><a class="btn" href="https://iris-frontend-y053.onrender.com">Ir al sistema</a><p style="margin-top:1.5rem;font-size:.8rem">API <a href="/api/health" style="color:#3b82f6">Health</a> · <a href="/api/docs" style="color:#3b82f6">Swagger</a></p></main></body></html>`);
+    res.send(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRIS Enterprise</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#0a0e1a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}main{text-align:center;padding:2rem}h1{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}p{color:#94a3b8;margin:1rem 0 2rem}.btn{display:inline-block;padding:.75rem 2rem;border-radius:.5rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font-weight:600;transition:opacity .2s;margin:0.25rem}.btn:hover{opacity:.9}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;margin:0 0.25rem}.badge-gdpr{background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}.badge-iso{background:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)}</style></head><body><main><h1>IRIS Enterprise</h1><p>Plataforma de Riesgo y Cumplimiento GDPR + ISO 27001</p><div style="margin-bottom:1.5rem"><span class="badge badge-gdpr">GDPR</span><span class="badge badge-iso">ISO 27001</span><span class="badge badge-gdpr">NIST CSF</span><span class="badge badge-iso">SOC 2</span></div><p style="font-size:0.9rem;color:#64748b">DPO · DPIA · Portabilidad · Consentimiento · Transferencias · Cifrado · DRP · RBAC</p><a class="btn" href="https://iris-frontend-y053.onrender.com">Ir al sistema</a><p style="margin-top:1.5rem;font-size:.8rem">API <a href="/api/health" style="color:#3b82f6">Health</a> · <a href="/api/docs" style="color:#3b82f6">Swagger</a> · <a href="/api/enterprise-compliance/dashboard" style="color:#3b82f6">Compliance</a></p></main></body></html>`);
   });
 
   // Proxy non-API requests to the frontend (Next.js)
@@ -147,5 +169,6 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`IRIS Enterprise running on http://localhost:${port}`);
   logger.log(`Legacy API: /api/health, /api/anthropic/messages, /api/supabase/*`);
+  logger.log(`GDPR: /api/gdpr/* | ISO 27001: /api/iso27001/* | Compliance Center: /api/enterprise-compliance/*`);
 }
 bootstrap();

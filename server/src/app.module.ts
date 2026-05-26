@@ -21,6 +21,9 @@ import { MfaModule } from './modules/mfa/mfa.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { ApiKeyGuard } from './middlewares/api-key.guard';
+import { GdprModule } from './gdpr/gdpr.module';
+import { Iso27001Module } from './iso27001/iso27001.module';
+import { EnterpriseComplianceModule } from './enterprise-compliance/enterprise-compliance.module';
 
 @Module({
   imports: [
@@ -43,6 +46,9 @@ import { ApiKeyGuard } from './middlewares/api-key.guard';
     MfaModule,
     ApiKeysModule,
     WebhooksModule,
+    GdprModule,
+    Iso27001Module,
+    EnterpriseComplianceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
