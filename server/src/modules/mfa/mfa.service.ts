@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as crypto from 'crypto';
+import base32 from 'base32-encode';
 
 @Injectable()
 export class MfaService {
@@ -20,10 +21,12 @@ export class MfaService {
       },
     });
 
+    const secretBase32 = base32(Buffer.from(secret, 'hex'), 'RFC4648');
     return {
       secret,
+      secretBase32,
       recoveryCodes,
-      qrCodeUrl: `otpauth://totp/IRIS:${userId}?secret=${secret}&issuer=IRIS%20Enterprise&algorithm=SHA1&digits=6&period=30`,
+      qrCodeUrl: `otpauth://totp/IRIS:${userId}?secret=${secretBase32}&issuer=IRIS%20Enterprise&algorithm=SHA1&digits=6&period=30`,
     };
   }
 
