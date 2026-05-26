@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
+import * as crypto from 'crypto';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
@@ -99,11 +100,18 @@ async function bootstrap() {
     const prisma = app.get(PrismaService);
     const superAdminEmail = 'brianburgoa@gmail.com';
     let superAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } });
+
+    // Generate TOTP secret so MFA works without blocking login
+    const totpSecret = crypto.randomBytes(20).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(totpSecret).digest('hex');
+
     if (!superAdmin) {
       const org = await prisma.organization.findFirst();
       if (org) {
-        const bcrypt = await (Function('return import("bcryptjs")')() as any).then((m: any) => m.default || m);
+        const bcryptModule = await (Function('return import("bcryptjs")')() as any);
+        const bcrypt = bcryptModule.default || bcryptModule;
         const hash = await bcrypt.hash('S3guridad2023#', 12);
+        const recoveryCodes = Array.from({ length: 8 }, () => crypto.randomBytes(4).toString('hex').toUpperCase());
         superAdmin = await prisma.user.create({
           data: {
             email: superAdminEmail,
@@ -113,10 +121,17 @@ async function bootstrap() {
             organizationId: org.id,
             isActive: true,
             mfaEnabled: true,
+            mfaSecret: hashedSecret,
+            mfaRecoveryCodes: recoveryCodes.map((c: string) => crypto.createHash('sha256').update(c).digest('hex')),
             securityLevel: 'maximum',
           },
         });
         logger.log(`Super admin created: ${superAdminEmail}`);
+        logger.log(`=== MFA SETUP ===`);
+        logger.log(`Secret (raw): ${totpSecret}`);
+        logger.log(`QR URL: otpauth://totp/IRIS:${superAdminEmail}?secret=${totpSecret}&issuer=IRIS%20Enterprise&algorithm=SHA1&digits=6&period=30`);
+        logger.log(`Recovery codes (save these!): ${recoveryCodes.join(', ')}`);
+        logger.log(`=================`);
       } else {
         logger.warn('No organization found to assign super admin');
       }
@@ -129,12 +144,39 @@ async function bootstrap() {
         });
         logger.log(`Super admin role enforced: ${superAdminEmail}`);
       }
-      // Ensure MFA is marked as enabled
-      if (!superAdmin.mfaEnabled) {
+      // If MFA is enabled but no secret is set, generate one to prevent lockout
+      if (superAdmin.mfaEnabled && !superAdmin.mfaSecret) {
+        const recoveryCodes = Array.from({ length: 8 }, () => crypto.randomBytes(4).toString('hex').toUpperCase());
         await prisma.user.update({
           where: { email: superAdminEmail },
-          data: { mfaEnabled: true },
+          data: {
+            mfaSecret: hashedSecret,
+            mfaRecoveryCodes: recoveryCodes.map((c: string) => crypto.createHash('sha256').update(c).digest('hex')),
+          },
         });
+        logger.log(`MFA secret generated for existing super admin`);
+        logger.log(`=== MFA SETUP ===`);
+        logger.log(`Secret (raw): ${totpSecret}`);
+        logger.log(`QR URL: otpauth://totp/IRIS:${superAdminEmail}?secret=${totpSecret}&issuer=IRIS%20Enterprise&algorithm=SHA1&digits=6&period=30`);
+        logger.log(`Recovery codes (save these!): ${recoveryCodes.join(', ')}`);
+        logger.log(`=================`);
+      } else if (!superAdmin.mfaEnabled) {
+        // Only enable MFA if we can set a secret
+        const recoveryCodes = Array.from({ length: 8 }, () => crypto.randomBytes(4).toString('hex').toUpperCase());
+        await prisma.user.update({
+          where: { email: superAdminEmail },
+          data: {
+            mfaEnabled: true,
+            mfaSecret: hashedSecret,
+            mfaRecoveryCodes: recoveryCodes.map((c: string) => crypto.createHash('sha256').update(c).digest('hex')),
+          },
+        });
+        logger.log(`MFA enabled for super admin`);
+        logger.log(`=== MFA SETUP ===`);
+        logger.log(`Secret (raw): ${totpSecret}`);
+        logger.log(`QR URL: otpauth://totp/IRIS:${superAdminEmail}?secret=${totpSecret}&issuer=IRIS%20Enterprise&algorithm=SHA1&digits=6&period=30`);
+        logger.log(`Recovery codes (save these!): ${recoveryCodes.join(', ')}`);
+        logger.log(`=================`);
       }
     }
   } catch (e: any) {
