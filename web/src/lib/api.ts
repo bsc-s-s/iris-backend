@@ -6,14 +6,20 @@ type RequestOptions = {
   params?: Record<string, string>;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, params } = options;
+function getDeviceHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const id = localStorage.getItem("iris_device_id");
+  return id ? { "x-device-id": id } : {};
+}
+
+async function request<T>(path: string, options: RequestOptions & { headers?: Record<string, string> } = {}): Promise<T> {
+  const { method = "GET", body, params, headers: extraHeaders } = options;
   let url = `${API_BASE}${path}`;
   if (params) {
     const qs = new URLSearchParams(params).toString();
     if (qs) url += `?${qs}`;
   }
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...getDeviceHeader(), ...extraHeaders };
   const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -220,8 +226,12 @@ export const v1 = {
 
 export const api = {
   auth: {
-    login: (data: { email: string; password: string }) =>
-      request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/login", { method: "POST", body: data }),
+    login: (data: { email: string; password: string }, headers?: Record<string, string>) =>
+      request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/login", { method: "POST", body: data, headers }),
+    loginStep1: (data: { email: string; password: string }, headers?: Record<string, string>) =>
+      request<{ mfaRequired: boolean; userId: string; email: string }>("/auth/login/step1", { method: "POST", body: data, headers }),
+    loginStep2: (data: { userId: string; mfaToken: string }, headers?: Record<string, string>) =>
+      request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/login/step2", { method: "POST", body: data, headers }),
     register: (data: { email: string; password: string; name: string; organizationName: string }) =>
       request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/register", { method: "POST", body: data }),
     refresh: (refreshToken: string) =>
@@ -280,5 +290,15 @@ export const api = {
   audit: {
     list: (params?: Record<string, string>) => request<any>("/audit", { params }),
     stats: () => request<any>("/audit/stats"),
+  },
+  security: {
+    dashboard: () => request<any>("/security/dashboard"),
+    events: (params?: Record<string, string>) => request<any>("/security/events", { params }),
+    users: (userId?: string) => request<any>("/security/users", { params: userId ? { userId } : {} }),
+    verifyChain: () => request<any>("/security/verify-chain", { method: "POST" }),
+    sessions: () => request<any>("/security/sessions"),
+    revokeSession: (sessionId: string) => request<any>("/security/revoke-session", { method: "POST", body: { sessionId } }),
+    lockUser: (userId: string, reason?: string) => request<any>("/security/lock-user", { method: "POST", body: { userId, reason } }),
+    unlockUser: (userId: string) => request<any>("/security/unlock-user", { method: "POST", body: { userId } }),
   },
 };

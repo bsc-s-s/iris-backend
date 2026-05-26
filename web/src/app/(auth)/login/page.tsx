@@ -3,7 +3,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Globe } from "lucide-react";
+import { Eye, EyeOff, Globe, Shield, Key } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { v1 } from "@/lib/api";
 
@@ -18,11 +18,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [mfaToken, setMfaToken] = useState("");
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaUserId, setMfaUserId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [ssoProviders, setSsoProviders] = useState<any[]>([]);
   const [ssoLoading, setSsoLoading] = useState<string | null>(null);
-  const { login, ssoLogin } = useAuth();
+  const { login, loginStep1, loginStep2, ssoLogin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -34,13 +37,30 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      if (mfaRequired) {
+        await loginStep2(mfaUserId, mfaToken);
+        router.push("/dashboard");
+      } else {
+        const result = await loginStep1(email, password);
+        if (result.mfaRequired) {
+          setMfaRequired(true);
+          setMfaUserId(result.userId);
+        } else {
+          await login(email, password);
+          router.push("/dashboard");
+        }
+      }
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToLogin = () => {
+    setMfaRequired(false);
+    setMfaToken("");
+    setError("");
   };
 
   return (
@@ -53,92 +73,142 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
-          <h2 className="text-lg font-semibold text-white">Iniciar sesión</h2>
-
-          {error && (
-            <div className="rounded-lg border border-iris-danger/30 bg-iris-danger/10 px-4 py-2 text-sm text-iris-danger">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-iris-300">Correo electrónico</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
-              placeholder="admin@ejemplo.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-iris-300">Contraseña</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input pr-10"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-iris-400 hover:text-iris-200"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading} className="btn btn-primary w-full">
-            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
-          </button>
-
-          {ssoProviders.length > 0 && (
+          {mfaRequired ? (
             <>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-iris-600/50" />
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-iris-accent" />
+                <h2 className="text-lg font-semibold text-white">Verificación MFA</h2>
+              </div>
+              <p className="text-xs text-iris-400">
+                Ingresa el código de 6 dígitos de tu aplicación de autenticación (Google Authenticator, Authy, etc.)
+              </p>
+
+              {error && (
+                <div className="rounded-lg border border-iris-danger/30 bg-iris-danger/10 px-4 py-2 text-sm text-iris-danger">
+                  {error}
                 </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-iris-800 px-2 text-iris-400">O continúa con</span>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Código MFA</label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-iris-400" />
+                  <input
+                    type="text"
+                    value={mfaToken}
+                    onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="input pl-10 text-center text-lg tracking-[0.5em]"
+                    placeholder="000000"
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {ssoProviders.map((p: any) => (
+
+              <button type="submit" disabled={loading || mfaToken.length !== 6} className="btn btn-primary w-full">
+                {loading ? "Verificando..." : "Verificar código"}
+              </button>
+
+              <button type="button" onClick={handleBackToLogin} className="btn btn-ghost w-full text-xs text-iris-400">
+                Volver al inicio de sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-semibold text-white">Iniciar sesión</h2>
+
+              {error && (
+                <div className="rounded-lg border border-iris-danger/30 bg-iris-danger/10 px-4 py-2 text-sm text-iris-danger">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Correo electrónico</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input"
+                  placeholder="admin@ejemplo.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-iris-300">Contraseña</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input pr-10"
+                    placeholder="••••••••"
+                    required
+                  />
                   <button
-                    key={p.id}
                     type="button"
-                    disabled={ssoLoading !== null}
-                    onClick={async () => {
-                      setSsoLoading(p.id);
-                      try { await ssoLogin(p.id); } catch { setSsoLoading(null); }
-                    }}
-                    className="btn btn-ghost flex items-center justify-center gap-2 text-xs"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-iris-400 hover:text-iris-200"
                   >
-                    {ssoLoading === p.id ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-iris-400 border-t-transparent" />
-                    ) : (
-                      <Globe className="h-4 w-4" />
-                    )}
-                    {p.name}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                ))}
+                </div>
               </div>
+
+              <button type="submit" disabled={loading} className="btn btn-primary w-full">
+                {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+              </button>
+
+              {ssoProviders.length > 0 && (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-iris-600/50" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-iris-800 px-2 text-iris-400">O continúa con</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ssoProviders.map((p: any) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        disabled={ssoLoading !== null}
+                        onClick={async () => {
+                          setSsoLoading(p.id);
+                          try { await ssoLogin(p.id); } catch { setSsoLoading(null); }
+                        }}
+                        className="btn btn-ghost flex items-center justify-center gap-2 text-xs"
+                      >
+                        {ssoLoading === p.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-iris-400 border-t-transparent" />
+                        ) : (
+                          <Globe className="h-4 w-4" />
+                        )}
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <p className="text-center text-xs text-iris-400">
+                ¿No tienes cuenta?{" "}
+                <Link href="/register" className="text-iris-accent hover:underline">
+                  Registrarse
+                </Link>
+              </p>
             </>
           )}
-
-          <p className="text-center text-xs text-iris-400">
-            ¿No tienes cuenta?{" "}
-            <Link href="/register" className="text-iris-accent hover:underline">
-              Registrarse
-            </Link>
-          </p>
         </form>
+
+        <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-iris-500">
+          <Shield className="h-3 w-3" />
+          Zero Trust Architecture · MFA Protected
+        </div>
       </div>
     </div>
   );

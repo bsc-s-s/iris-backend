@@ -24,6 +24,7 @@ import { ApiKeyGuard } from './middlewares/api-key.guard';
 import { GdprModule } from './gdpr/gdpr.module';
 import { Iso27001Module } from './iso27001/iso27001.module';
 import { EnterpriseComplianceModule } from './enterprise-compliance/enterprise-compliance.module';
+import { ZeroTrustModule } from './zero-trust/zero-trust.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { EnterpriseComplianceModule } from './enterprise-compliance/enterprise-c
     GdprModule,
     Iso27001Module,
     EnterpriseComplianceModule,
+    ZeroTrustModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

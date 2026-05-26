@@ -61,6 +61,7 @@ model Organization {
   encryptionKeys      EncryptionKey[]
   sensitiveFields     SensitiveField[]
   dataRetentionPolicies DataRetentionPolicy[]
+  securityEvents      SecurityEvent[]
 }
 
 model User {
@@ -79,6 +80,15 @@ model User {
   mfaRecoveryCodes String[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  // Zero Trust Security
+  securityLevel         String   @default("standard") // standard, elevated, maximum
+  lastDeviceId          String?
+  lockedIp              String?
+  allowedCountries      String[]
+  failedLoginAttempts   Int      @default(0)
+  lockedUntil           DateTime?
+  devices               Json?    // [{deviceId, firstSeen, lastSeen, trusted}]
 
   // GDPR & Privacy
   consentGiven          Boolean @default(false)
@@ -101,6 +111,7 @@ model User {
   dpiaCreated           DataProcessingRecord[] @relation("DataProcessingRecordCreator")
   dpiaReviewed          DataProcessingRecord[] @relation("DataProcessingRecordReviewer")
   dataExportRequests    DataExport[] @relation("DataExportRequester")
+  securityEvents        SecurityEvent[]
 
   @@index([organizationId])
   @@index([email])
@@ -762,4 +773,30 @@ model DataRetentionPolicy {
 
   @@unique([organizationId, dataCategory])
   @@index([organizationId])
+}
+
+/// Immutable Security Event Log (Zero Trust blockchain-style audit)
+model SecurityEvent {
+  id             String   @id @default(cuid())
+  type           String   // login, logout, failed_login, mfa_attempt, device_change, ip_change, geo_anomaly, session_hijack, account_lockout, access_denied, anomaly_blocked, anomaly_warning, session_revoked, user_locked, user_unlocked
+  severity       String   @default("info") // info, warning, critical
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  ipAddress      String?
+  deviceId       String?
+  country        String?
+  userAgent      String?
+  metadata       Json?
+  hash           String   @unique
+  previousHash   String?
+  timestamp      DateTime @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([hash])
 }

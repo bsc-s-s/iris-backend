@@ -24,6 +24,7 @@ import {
   ScanEye,
   Eye,
   Lock,
+  Fingerprint,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -46,6 +47,7 @@ const NAV_ITEMS = [
   { href: "/sso", label: "SSO", icon: Globe },
   { href: "/users", label: "Usuarios", icon: Users },
   { href: "/audit", label: "Auditoría", icon: FileText },
+  { href: "/security", label: "Zero Trust", icon: Fingerprint },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];
 

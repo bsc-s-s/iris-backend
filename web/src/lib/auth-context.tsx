@@ -2,15 +2,18 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { api, v1 } from "./api";
+import { getDeviceId } from "./device-id";
 
-type User = { id: string; email: string; name: string; role: string; title?: string };
+type User = { id: string; email: string; name: string; role: string; title?: string; mfaEnabled?: boolean; securityLevel?: string };
 type Organization = { id: string; name: string; slug: string; plan: string };
 
 type AuthContextType = {
   user: User | null;
   organization: Organization | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, mfaToken?: string) => Promise<{ mfaRequired?: boolean; userId?: string } | void>;
+  loginStep1: (email: string, password: string) => Promise<{ mfaRequired: boolean; userId: string; email: string }>;
+  loginStep2: (userId: string, mfaToken: string) => Promise<void>;
   register: (data: { email: string; password: string; name: string; organizationName: string }) => Promise<void>;
   logout: () => Promise<void>;
   ssoLogin: (provider: string) => Promise<void>;
@@ -46,8 +49,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchUser]);
 
-  const login = async (email: string, password: string) => {
-    const data = await api.auth.login({ email, password });
+  const login = async (email: string, password: string, mfaToken?: string) => {
+    const deviceId = getDeviceId();
+    const headers: Record<string, string> = { "x-device-id": deviceId };
+    if (mfaToken) headers["x-mfa-token"] = mfaToken;
+
+    const data = await api.auth.login({ email, password }, headers);
+    localStorage.setItem("iris_token", data.accessToken);
+    localStorage.setItem("iris_refresh", data.refreshToken);
+    setUser(data.user);
+    setOrganization(data.organization);
+  };
+
+  const loginStep1 = async (email: string, password: string) => {
+    const deviceId = getDeviceId();
+    return api.auth.loginStep1({ email, password }, { "x-device-id": deviceId });
+  };
+
+  const loginStep2 = async (userId: string, mfaToken: string) => {
+    const deviceId = getDeviceId();
+    const data = await api.auth.loginStep2({ userId, mfaToken }, { "x-device-id": deviceId });
     localStorage.setItem("iris_token", data.accessToken);
     localStorage.setItem("iris_refresh", data.refreshToken);
     setUser(data.user);
@@ -66,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await api.auth.logout(); } catch {}
     localStorage.removeItem("iris_token");
     localStorage.removeItem("iris_refresh");
+    localStorage.removeItem("iris_device_id");
     setUser(null);
     setOrganization(null);
   };
@@ -83,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, organization, loading, login, register, logout, ssoLogin, setSsoSession }}>
+    <AuthContext.Provider value={{ user, organization, loading, login, loginStep1, loginStep2, register, logout, ssoLogin, setSsoSession }}>
       {children}
     </AuthContext.Provider>
   );
