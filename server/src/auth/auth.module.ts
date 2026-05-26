@@ -9,7 +9,7 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET is required'); })(),
+      secret: process.env.JWT_SECRET || 'iris-jwt-secret-change-in-production',
       signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '15m') as any },
     }),
   ],
