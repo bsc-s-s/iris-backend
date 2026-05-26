@@ -15,7 +15,14 @@ async function bootstrap() {
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
 
-  // Security headers with Helmet (graceful fallback for ESM-only v8)
+  // Push Prisma schema on startup (creates missing columns/tables)
+  try {
+    const { execSync } = require('child_process');
+    execSync('npx prisma db push --accept-data-loss', { cwd: __dirname + '/..', stdio: 'pipe', timeout: 30000, env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASS || '')}@${process.env.DB_HOST}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'postgres'}?sslmode=require` } });
+    logger.log('Prisma schema synced');
+  } catch (e: any) {
+    logger.warn(`Schema sync skipped: ${e.message?.substring(0, 200)}`);
+  }
   try {
     const helmetModule = await import('helmet');
     const helmet = (helmetModule as any).default || helmetModule;
