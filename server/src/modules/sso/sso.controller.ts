@@ -81,7 +81,7 @@ export class SsoController {
       return res.redirect(`${frontendUrl}/sso-callback?token=${result.accessToken}&refresh=${result.refreshToken}`);
     } catch (err: any) {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      return res.redirect(`${frontendUrl}/sso-callback?error=${encodeURIComponent(err.message)}`);
+      return res.redirect(`${frontendUrl}/sso-callback?error=${encodeURIComponent(err.message + ' [' + (err.code || '') + ']')}`);
     }
   }
 

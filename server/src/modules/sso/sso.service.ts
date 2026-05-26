@@ -117,7 +117,8 @@ export class SsoService {
         user: { id: user.id, email: user.email, name: user.name, role: user.role },
       };
     } catch (err: any) {
-      this.logger.error(`OIDC callback error: ${err.message}`);
+      this.logger.error(`OIDC callback error: ${err.message} | code: ${err.code} | status: ${err.status}`);
+      if (err.response) this.logger.error(`Response body: ${JSON.stringify(err.response.body || {})}`);
       throw new UnauthorizedException('SSO authentication failed: ' + err.message);
     }
   }
