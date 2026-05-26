@@ -129,6 +129,93 @@ export const v1 = {
     executive: () => v1Request<any>("/compliance/generate-report", { method: "POST" }),
     assessment: (id: string) => v1Request<any>(`/reports/assessment/${id}`, { method: "POST" }),
   },
+  gdpr: {
+    dashboard: () => v1Request<any>("/gdpr/dashboard"),
+    dpo: {
+      get: () => v1Request<any>("/gdpr/dpo"),
+      set: (data: any) => v1Request<any>("/gdpr/dpo", { method: "POST", body: data }),
+      remove: () => v1Request<any>("/gdpr/dpo", { method: "DELETE" }),
+    },
+    dpia: {
+      list: (status?: string) => v1Request<any[]>("/gdpr/dpia", { params: status ? { status } : {} }),
+      create: (data: any) => v1Request<any>("/gdpr/dpia", { method: "POST", body: data }),
+      get: (id: string) => v1Request<any>(`/gdpr/dpia/${id}`),
+      update: (id: string, data: any) => v1Request<any>(`/gdpr/dpia/${id}`, { method: "PUT", body: data }),
+      review: (id: string, data: any) => v1Request<any>(`/gdpr/dpia/${id}/review`, { method: "PUT", body: data }),
+      delete: (id: string) => v1Request<any>(`/gdpr/dpia/${id}`, { method: "DELETE" }),
+    },
+    export: {
+      create: (data?: any) => v1Request<any>("/gdpr/export", { method: "POST", body: data || {} }),
+      list: () => v1Request<any[]>("/gdpr/exports"),
+    },
+    consent: {
+      list: (userId?: string) => v1Request<any[]>("/gdpr/consents", { params: userId ? { userId } : {} }),
+      withdraw: (id: string) => v1Request<any>(`/gdpr/consent/withdraw/${id}`, { method: "POST" }),
+    },
+    userConsent: {
+      list: () => v1Request<any[]>("/gdpr/user-consents"),
+      accept: (data: any) => v1Request<any>("/gdpr/user-consent", { method: "POST", body: data }),
+    },
+    transfers: {
+      list: () => v1Request<any[]>("/gdpr/transfers"),
+      create: (data: any) => v1Request<any>("/gdpr/transfers", { method: "POST", body: data }),
+      update: (id: string, data: any) => v1Request<any>(`/gdpr/transfers/${id}`, { method: "PUT", body: data }),
+      delete: (id: string) => v1Request<any>(`/gdpr/transfers/${id}`, { method: "DELETE" }),
+    },
+    dsr: {
+      create: (data: any) => v1Request<any>("/gdpr/subject-request", { method: "POST", body: data }),
+      list: (status?: string) => v1Request<any[]>("/gdpr/subject-requests", { params: status ? { status } : {} }),
+      process: (id: string, data: any) => v1Request<any>(`/gdpr/subject-request/${id}/process`, { method: "PUT", body: data }),
+    },
+    privacyPolicy: {
+      get: (version?: string) => v1Request<any>("/gdpr/privacy-policy", { params: version ? { version } : {} }),
+      list: () => v1Request<any[]>("/gdpr/privacy-policies"),
+      create: (data: any) => v1Request<any>("/gdpr/privacy-policy", { method: "POST", body: data }),
+    },
+    settings: {
+      get: () => v1Request<any>("/gdpr/settings"),
+      update: (data: any) => v1Request<any>("/gdpr/settings", { method: "PUT", body: data }),
+    },
+    retention: {
+      list: () => v1Request<any[]>("/gdpr/retention-policies"),
+      upsert: (data: any) => v1Request<any>("/gdpr/retention-policy", { method: "POST", body: data }),
+    },
+  },
+  iso27001: {
+    dashboard: () => v1Request<any>("/iso27001/dashboard"),
+    backup: {
+      get: () => v1Request<any>("/iso27001/backup"),
+      update: (data: any) => v1Request<any>("/iso27001/backup", { method: "PUT", body: data }),
+      record: (data: any) => v1Request<any>("/iso27001/backup/record", { method: "POST", body: data }),
+    },
+    drp: {
+      get: () => v1Request<any>("/iso27001/drp"),
+      update: (data: any) => v1Request<any>("/iso27001/drp", { method: "PUT", body: data }),
+      test: (data: any) => v1Request<any>("/iso27001/drp/test", { method: "POST", body: data }),
+    },
+    providers: {
+      list: () => v1Request<any[]>("/iso27001/providers"),
+      create: (data: any) => v1Request<any>("/iso27001/providers", { method: "POST", body: data }),
+      update: (id: string, data: any) => v1Request<any>(`/iso27001/providers/${id}`, { method: "PUT", body: data }),
+      delete: (id: string) => v1Request<any>(`/iso27001/providers/${id}`, { method: "DELETE" }),
+    },
+    encryptionKeys: {
+      list: () => v1Request<any[]>("/iso27001/encryption-keys"),
+      create: (data: any) => v1Request<any>("/iso27001/encryption-keys", { method: "POST", body: data }),
+      rotate: (id: string) => v1Request<any>(`/iso27001/encryption-keys/${id}/rotate`, { method: "POST" }),
+      revoke: (id: string) => v1Request<any>(`/iso27001/encryption-keys/${id}/revoke`, { method: "POST" }),
+    },
+    sensitiveFields: {
+      list: () => v1Request<any[]>("/iso27001/sensitive-fields"),
+      upsert: (data: any) => v1Request<any>("/iso27001/sensitive-fields", { method: "PUT", body: data }),
+      delete: (id: string) => v1Request<any>(`/iso27001/sensitive-fields/${id}`, { method: "DELETE" }),
+    },
+  },
+  enterpriseCompliance: {
+    dashboard: () => v1Request<any>("/enterprise-compliance/dashboard"),
+    summary: () => v1Request<any>("/enterprise-compliance/summary"),
+    auditTrail: (params?: Record<string, string>) => v1Request<any>("/enterprise-compliance/audit-trail", { params }),
+  },
 };
 
 export const api = {

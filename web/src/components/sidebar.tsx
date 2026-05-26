@@ -22,6 +22,8 @@ import {
   Key,
   Radio,
   ScanEye,
+  Eye,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -30,6 +32,10 @@ const NAV_ITEMS = [
   { href: "/assessments", label: "Evaluaciones", icon: ClipboardCheck },
   { href: "/risk-forecast", label: "Pronóstico", icon: TrendingUp },
   { href: "/compliance", label: "Compliance", icon: ShieldCheck },
+  { href: "/compliance-center", label: "Compliance Center", icon: Building2 },
+  { href: "/gdpr", label: "GDPR", icon: Lock },
+  { href: "/iso27001", label: "ISO 27001", icon: Shield },
+  { href: "/privacy", label: "Privacidad", icon: Eye },
   { href: "/anomalies", label: "Anomalías", icon: ScanEye },
   { href: "/api-keys", label: "API Keys", icon: Key },
   { href: "/webhooks", label: "Webhooks", icon: Radio },
