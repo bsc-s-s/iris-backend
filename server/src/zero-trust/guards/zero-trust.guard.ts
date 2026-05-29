@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { SKIP_ZERO_TRUST_KEY } from '../decorators/skip-zero-trust.decorator';
@@ -30,7 +30,7 @@ export class ZeroTrustGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    if (!user) throw new UnauthorizedException('Authentication required');
+    if (!user) return true; // JWT AuthGuard hasn't run yet — skip Zero Trust, it will auth later
 
     const ipAddress = request.ip || request.connection?.remoteAddress || '';
     const deviceId = request.headers['x-device-id'] as string || '';
