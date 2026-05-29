@@ -12,17 +12,88 @@ function getDeviceHeader(): Record<string, string> {
   return id ? { "x-device-id": id } : {};
 }
 
-async function request<T>(path: string, options: RequestOptions & { headers?: Record<string, string> } = {}): Promise<T> {
-  const { method = "GET", body, params, headers: extraHeaders } = options;
-  let url = `${API_BASE}${path}`;
+let isRefreshing = false;
+let pendingRequests: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = localStorage.getItem("iris_refresh");
+  if (!refreshToken) throw new Error("No refresh token");
+
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) {
+    localStorage.removeItem("iris_token");
+    localStorage.removeItem("iris_refresh");
+    throw new Error("Refresh failed");
+  }
+
+  const data = await res.json();
+  localStorage.setItem("iris_token", data.accessToken);
+  if (data.refreshToken) localStorage.setItem("iris_refresh", data.refreshToken);
+  return data.accessToken;
+}
+
+async function handleRefresh(): Promise<string> {
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      pendingRequests.push({ resolve, reject });
+    });
+  }
+
+  isRefreshing = true;
+  try {
+    const token = await refreshAccessToken();
+    pendingRequests.forEach((p) => p.resolve(token));
+    return token;
+  } catch (err) {
+    pendingRequests.forEach((p) => p.reject(err));
+    pendingRequests = [];
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    throw err;
+  } finally {
+    pendingRequests = [];
+    isRefreshing = false;
+  }
+}
+
+function buildUrl(base: string, path: string, params?: Record<string, string>): string {
+  let url = `${base}${path}`;
   if (params) {
     const qs = new URLSearchParams(params).toString();
     if (qs) url += `?${qs}`;
   }
+  return url;
+}
+
+function buildHeaders(extraHeaders?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json", ...getDeviceHeader(), ...extraHeaders };
   const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  return headers;
+}
+
+async function request<T>(path: string, options: RequestOptions & { headers?: Record<string, string> } = {}): Promise<T> {
+  const { method = "GET", body, params, headers: extraHeaders } = options;
+  const url = buildUrl(API_BASE, path, params);
+  let headers = buildHeaders(extraHeaders);
+  let res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+
+  if (res.status === 401) {
+    try {
+      const newToken = await handleRefresh();
+      headers = { ...buildHeaders(extraHeaders), Authorization: `Bearer ${newToken}` };
+      res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    } catch {
+      throw new Error("Sesión expirada. Redirigiendo al login...");
+    }
+  }
+
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(error.message || `API Error: ${res.status}`);
@@ -34,15 +105,20 @@ const V1_BASE = "/api/v1";
 
 async function v1Request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, params } = options;
-  let url = `${V1_BASE}${path}`;
-  if (params) {
-    const qs = new URLSearchParams(params).toString();
-    if (qs) url += `?${qs}`;
+  const url = buildUrl(V1_BASE, path, params);
+  let headers = buildHeaders();
+  let res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+
+  if (res.status === 401) {
+    try {
+      const newToken = await handleRefresh();
+      headers = { ...buildHeaders(), Authorization: `Bearer ${newToken}` };
+      res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    } catch {
+      throw new Error("Sesión expirada. Redirigiendo al login...");
+    }
   }
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(error.message || `API Error: ${res.status}`);
