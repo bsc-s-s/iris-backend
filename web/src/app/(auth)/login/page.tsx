@@ -195,11 +195,8 @@ export default function LoginPage() {
                 </>
               )}
 
-              <p className="text-center text-xs text-iris-400">
-                ¿No tienes cuenta?{" "}
-                <Link href="/register" className="text-iris-accent hover:underline">
-                  Registrarse
-                </Link>
+              <p className="text-center text-xs text-iris-500">
+                Acceso restringido · Solo administradores
               </p>
             </>
           )}

@@ -17,12 +17,10 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @ApiOperation({ summary: 'Registrar nueva organización con usuario admin' })
-  @ApiBody({ type: RegisterDto })
-  @ApiResponse({ status: 201, description: 'Organización y usuario creados exitosamente' })
-  @ApiResponse({ status: 409, description: 'Email ya registrado' })
+  @ApiOperation({ summary: 'Registro público deshabilitado. Use POST /admin/users/create' })
+  @ApiResponse({ status: 410, description: 'Registro público deshabilitado' })
   async register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto);
+    return { statusCode: 410, message: 'Registro público deshabilitado. Solo un administrador puede crear usuarios.', ok: false };
   }
 
   @Post('login')

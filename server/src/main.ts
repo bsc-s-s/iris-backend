@@ -53,6 +53,8 @@ async function bootstrap() {
       `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoPhone" TEXT`,
       `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoTitle" TEXT`,
       `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "dpoAppointedAt" TIMESTAMP(3)`,
+      // RBAC columns
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "metadata" JSONB DEFAULT '{}'::jsonb`,
     ];
     for (const sql of migrations) {
       await prisma.$executeRawUnsafe(sql);

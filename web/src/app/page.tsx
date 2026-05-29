@@ -32,9 +32,9 @@ export default function LandingPage() {
           <Link href="/login" className="btn btn-primary px-8 py-3 text-base">
             Ingresar al sistema
           </Link>
-          <Link href="/register" className="btn btn-ghost px-8 py-3 text-base text-iris-300 hover:text-white">
-            Solicitar acceso
-          </Link>
+          <span className="btn btn-ghost px-8 py-3 text-base text-iris-500 cursor-not-allowed opacity-60">
+            Acceso restringido
+          </span>
         </div>
       </section>
 

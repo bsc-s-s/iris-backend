@@ -25,6 +25,14 @@ import { GdprModule } from './gdpr/gdpr.module';
 import { Iso27001Module } from './iso27001/iso27001.module';
 import { EnterpriseComplianceModule } from './enterprise-compliance/enterprise-compliance.module';
 import { ZeroTrustModule } from './zero-trust/zero-trust.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { PermissionsGuard } from './modules/rbac/guards/permissions.guard';
+import { ThinkingEngineModule } from './modules/thinking-engine/thinking-engine.module';
+import { DocumentAnalysisModule } from './modules/document-analysis/document-analysis.module';
+import { ScoringModule } from './modules/scoring/scoring.module';
+import { RiskIntelligenceModule } from './modules/risk-intelligence/risk-intelligence.module';
+import { InvisibleRiskEngineModule } from './modules/invisible-risk-engine/invisible-risk-engine.module';
 
 @Module({
   imports: [
@@ -51,9 +59,17 @@ import { ZeroTrustModule } from './zero-trust/zero-trust.module';
     Iso27001Module,
     EnterpriseComplianceModule,
     ZeroTrustModule,
+        RbacModule,
+    AdminModule,
+    ThinkingEngineModule,
+    DocumentAnalysisModule,
+    ScoringModule,
+    RiskIntelligenceModule,
+    InvisibleRiskEngineModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    PermissionsGuard,
     MonitoringService,
     ApiKeyGuard,
   ],
