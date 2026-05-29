@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle } from "lucide-react";
+import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, Layers } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 
@@ -50,8 +50,12 @@ export default function AssessmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [responses, setResponses] = useState<Record<string, number>>({});
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [step, setStep] = useState<"select" | "answer">("select");
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
+
+  const allCategories = Array.from(new Set(QUESTIONS.map((q) => q.category)));
 
   const load = () => {
     setLoading(true);
@@ -63,6 +67,9 @@ export default function AssessmentDetailPage() {
         existing[r.questionId] = (r.response as any)?.value ?? 0;
       }
       setResponses(existing);
+      if (Object.keys(existing).length > 0) {
+        setStep("answer");
+      }
     }).catch((e) => setLoadError(e.message)).finally(() => setLoading(false));
   };
 
@@ -112,7 +119,12 @@ export default function AssessmentDetailPage() {
   const severityColor = (sev: string) =>
     sev === "critical" ? "badge-critical" : sev === "high" ? "badge-high" : sev === "medium" ? "badge-medium" : "badge-low";
 
-  const categories = Array.from(new Set(QUESTIONS.map((q) => q.category)));
+  const selectAll = () => setSelectedCategories(new Set(allCategories));
+  const toggleCategory = (cat: string) => {
+    const next = new Set(selectedCategories);
+    if (next.has(cat)) next.delete(cat); else next.add(cat);
+    setSelectedCategories(next);
+  };
 
   return (
     <div className="space-y-6">
@@ -131,17 +143,71 @@ export default function AssessmentDetailPage() {
         </span>
       </div>
 
-      {isDraft ? (
+      {isDraft && step === "select" && (
+        <div className="card">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Seleccionar áreas a evaluar</h3>
+              <p className="mt-1 text-xs text-iris-400">Elige las áreas de riesgo que deseas analizar en esta evaluación.</p>
+            </div>
+            <button onClick={selectAll} className="btn btn-ghost text-xs">Seleccionar todo</button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {allCategories.map((cat) => {
+              const count = QUESTIONS.filter((q) => q.category === cat).length;
+              const selected = selectedCategories.has(cat);
+              return (
+                <button
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
+                    selected
+                      ? "border-iris-accent bg-iris-accent/10"
+                      : "border-iris-600/50 bg-iris-700/30 hover:border-iris-500/50"
+                  }`}
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                    selected ? "bg-iris-accent text-white" : "bg-iris-600 text-iris-300"
+                  }`}>
+                    {count}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">{RISK_LABELS[cat] || cat}</p>
+                    <p className="text-xs text-iris-400">{count} preguntas</p>
+                  </div>
+                  {selected && <CheckCircle className="h-5 w-5 text-iris-accent" />}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => { if (selectedCategories.size > 0) setStep("answer"); }}
+              disabled={selectedCategories.size === 0}
+              className="btn btn-primary"
+            >
+              <ChevronRight className="h-4 w-4" /> Continuar ({selectedCategories.size} áreas)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isDraft && step === "answer" && (
         <div className="space-y-4">
           <div className="card">
-            <h3 className="mb-4 text-sm font-semibold text-white">Responder preguntas</h3>
-            <p className="mb-4 text-xs text-iris-400">Evalúa cada área del 1 (muy bajo riesgo) al 5 (riesgo crítico).</p>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Responder preguntas</h3>
+                <p className="mt-1 text-xs text-iris-400">Evalúa cada aspecto del 1 (muy bajo riesgo) al 5 (riesgo crítico).</p>
+              </div>
+              <button onClick={() => setStep("select")} className="btn btn-ghost text-xs">Cambiar áreas</button>
+            </div>
             {msg && (
               <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.startsWith("Error") ? "bg-red-900/30 text-red-400" : "bg-green-900/30 text-green-400"}`}>
                 {msg}
               </div>
             )}
-            {categories.map((cat) => (
+            {allCategories.filter((c) => selectedCategories.has(c)).map((cat) => (
               <div key={cat} className="mb-6">
                 <h4 className="mb-3 text-sm font-bold text-iris-accent">{RISK_LABELS[cat] || cat}</h4>
                 <div className="space-y-3">
@@ -180,7 +246,9 @@ export default function AssessmentDetailPage() {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {!isDraft && (
         <>
           {scores?.categories && (
             <div className="card">
