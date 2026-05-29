@@ -15,9 +15,11 @@ export default function AssessmentsPage() {
   const [title, setTitle] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
 
   const load = () => {
-    api.assessments.list(filterStatus || undefined).then(setAssessments).catch(() => {});
+    setError("");
+    api.assessments.list(filterStatus || undefined).then(setAssessments).catch(() => setError("Error al cargar evaluaciones"));
     api.facilities.list().then(setFacilities).catch(() => {});
   };
 
@@ -26,13 +28,16 @@ export default function AssessmentsPage() {
   const create = async () => {
     if (!title) return;
     setCreating(true);
+    setError("");
     try {
       const a = await api.assessments.create({ title, facilityId: facilityId || undefined });
       setShowCreate(false);
       setTitle("");
       setFacilityId("");
       router.push(`/assessments/${a.id}`);
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || "Error al crear la evaluación");
+    }
     setCreating(false);
   };
 
@@ -75,6 +80,7 @@ export default function AssessmentsPage() {
               </button>
               <button onClick={() => setShowCreate(false)} className="btn btn-ghost">Cancelar</button>
             </div>
+            {error && <p className="text-xs text-red-400">{error}</p>}
           </div>
         </div>
       )}

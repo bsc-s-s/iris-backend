@@ -17,10 +17,14 @@ export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [assessment, setAssessment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const [loadError, setLoadError] = useState("");
 
   const load = () => {
     setLoading(true);
-    api.assessments.get(id).then(setAssessment).catch(() => {}).finally(() => setLoading(false));
+    setLoadError("");
+    api.assessments.get(id).then(setAssessment).catch((e) => setLoadError(e.message)).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [id]);
@@ -31,6 +35,10 @@ export default function AssessmentDetailPage() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-iris-accent border-t-transparent" />
       </div>
     );
+  }
+
+  if (loadError) {
+    return <div className="text-center py-20 text-red-400">Error: {loadError}</div>;
   }
 
   if (!assessment) {
