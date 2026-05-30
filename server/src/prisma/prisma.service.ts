@@ -1,13 +1,14 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const adapter = new PrismaPg({
+    const pool = new Pool({
       host: process.env.DB_HOST || 'aws-0-eu-west-1.pooler.supabase.com',
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'postgres',
@@ -16,6 +17,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 10000,
     });
+    const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 
