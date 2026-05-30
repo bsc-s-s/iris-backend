@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { iris } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { useParams } from 'next/navigation';
 
 export default function ScanSessionPage() {
+  const { t } = useI18n();
   const { id } = useParams() as { id: string };
   const [scan, setScan] = useState<any>(null);
   const [current, setCurrent] = useState<any>(null);
@@ -60,11 +62,11 @@ export default function ScanSessionPage() {
       <div className="min-h-screen bg-gray-950 text-white p-6 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg text-center space-y-6">
           <div className="text-6xl">✅</div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">Scan Complete</h1>
-          <p className="text-gray-400">Your organizational intelligence scan has been completed. IRIS is analyzing your responses for risk signals.</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">{t('scan.complete_title')}</h1>
+          <p className="text-gray-400">{t('scan.complete_desc')}</p>
           <div className="flex justify-center gap-4">
-            <a href="/iris/scan" className="px-6 py-3 border border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all">New Scan</a>
-            <a href="/iris" className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all">View Dashboard</a>
+            <a href="/iris/scan" className="px-6 py-3 border border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all">{t('scan.new_scan')}</a>
+            <a href="/iris" className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all">{t('scan.view_dashboard')}</a>
           </div>
         </motion.div>
       </div>
@@ -76,7 +78,6 @@ export default function ScanSessionPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Progress */}
         <div className="flex items-center gap-4">
           <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
             <motion.div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.5 }} />
@@ -84,18 +85,17 @@ export default function ScanSessionPage() {
           <span className="text-sm text-gray-400">{scan?.currentQuestion}/{scan?.totalQuestions}</span>
         </div>
 
-        {/* Question */}
         {current?.question && (
           <motion.div key={current.question.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-800 bg-gray-900/50 backdrop-blur-xl p-8">
-            <div className="text-xs text-indigo-400 uppercase tracking-wider mb-2">{current.question.category.replace(/_/g, ' ')} {current.question.depth > 1 && `· Depth ${current.question.depth}`}</div>
+            <div className="text-xs text-indigo-400 uppercase tracking-wider mb-2">{current.question.category.replace(/_/g, ' ')} {current.question.depth > 1 && `· ${t('scan.depth')} ${current.question.depth}`}</div>
             <h2 className="text-2xl font-semibold mb-8">{current.question.text}</h2>
             <div className="grid grid-cols-5 gap-3">
               {[
-                { value: 1, label: 'Strongly Disagree', color: 'red' },
-                { value: 2, label: 'Disagree', color: 'orange' },
-                { value: 3, label: 'Neutral', color: 'gray' },
-                { value: 4, label: 'Agree', color: 'lime' },
-                { value: 5, label: 'Strongly Agree', color: 'green' },
+                { value: 1, label: t('scan.strongly_disagree'), color: 'red' },
+                { value: 2, label: t('scan.disagree'), color: 'orange' },
+                { value: 3, label: t('scan.neutral'), color: 'gray' },
+                { value: 4, label: t('scan.agree'), color: 'lime' },
+                { value: 5, label: t('scan.strongly_agree'), color: 'green' },
               ].map(opt => (
                 <button key={opt.value} onClick={() => submitResponse(opt.value)} disabled={submitting}
                   className="p-4 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-gray-800/60 hover:border-indigo-500 transition-all text-center disabled:opacity-50"
@@ -110,8 +110,8 @@ export default function ScanSessionPage() {
 
         {!current?.question && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-4">
-            <p className="text-gray-400">All questions answered. Complete the scan to see your results.</p>
-            <button onClick={finishComplete} className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all">Complete Scan</button>
+            <p className="text-gray-400">{t('scan.all_answered')}</p>
+            <button onClick={finishComplete} className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-sm font-medium hover:from-indigo-500 hover:to-purple-500 transition-all">{t('scan.complete')}</button>
           </motion.div>
         )}
       </div>
