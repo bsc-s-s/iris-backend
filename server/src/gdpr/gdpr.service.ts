@@ -1,9 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class GdprService {
+  private readonly logger = new Logger(GdprService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -273,27 +275,68 @@ export class GdprService {
   // ==================== GDPR Dashboard ====================
 
   async getGdprDashboard(orgId: string) {
-    const [org, dpias, exports, consentRecords, transfers, dsrs, policies, consents] = await Promise.all([
-      this.prisma.organization.findUnique({ where: { id: orgId }, select: { dpoName: true, dpoEmail: true, dpoAppointedAt: true, dataRetentionDays: true, encryptionEnabled: true } }),
-      this.prisma.dataProcessingRecord.count({ where: { organizationId: orgId } }),
-      this.prisma.dataExport.count({ where: { organizationId: orgId } }),
-      this.prisma.consentRecord.count({ where: { organizationId: orgId } }),
-      this.prisma.internationalTransfer.count({ where: { organizationId: orgId } }),
-      this.prisma.dataSubjectRequest.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 5 }),
-      this.prisma.privacyPolicy.findFirst({ where: { organizationId: orgId }, orderBy: { effectiveDate: 'desc' } }),
-      this.prisma.userConsent.count({ where: { organizationId: orgId, accepted: true } }),
-    ]);
+    try {
+      const [org, dpiaList, exportRequests, consentList, transfers, dsrList, policies, retentionPolicies, acceptedConsents] = await Promise.all([
+        this.prisma.organization.findUnique({ where: { id: orgId }, select: { dpoName: true, dpoEmail: true, dpoAppointedAt: true, dataRetentionDays: true, encryptionEnabled: true } }),
+        this.prisma.dataProcessingRecord.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 10 }),
+        this.prisma.dataExport.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 10 }),
+        this.prisma.consentRecord.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 20 }),
+        this.prisma.internationalTransfer.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 10 }),
+        this.prisma.dataSubjectRequest.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: { select: { name: true, email: true } } } }),
+        this.prisma.privacyPolicy.findFirst({ where: { organizationId: orgId }, orderBy: { effectiveDate: 'desc' } }),
+        this.prisma.dataRetentionPolicy.findMany({ where: { organizationId: orgId } }).catch(() => []),
+        this.prisma.userConsent.count({ where: { organizationId: orgId, accepted: true } }).catch(() => 0),
+      ]);
 
-    return {
-      dpo: { appointed: !!org?.dpoName, name: org?.dpoName, email: org?.dpoEmail, appointedAt: org?.dpoAppointedAt },
-      dpias: { total: dpias },
-      exports: { total: exports },
-      consents: { total: consentRecords, accepted: consents },
-      transfers: { total: transfers },
-      dataRetentionDays: org?.dataRetentionDays,
-      encryptionEnabled: org?.encryptionEnabled,
-      recentDsrs: dsrs,
-      currentPrivacyPolicy: policies || null,
-    };
+      return {
+        dpo: { appointed: !!org?.dpoName, name: org?.dpoName, email: org?.dpoEmail, appointedAt: org?.dpoAppointedAt },
+        dpiaList: (dpiaList || []).map(d => ({
+          id: d.id, title: d.title, status: d.status,
+          department: (d as any).department || '', riskLevel: d.riskLevel, description: d.description,
+          createdAt: d.createdAt,
+        })),
+        consentList: (consentList || []).map(c => ({
+          id: c.id, userId: c.userId || '', email: '', type: c.type,
+          active: c.status === 'granted', status: c.status,
+          createdAt: c.createdAt,
+        })),
+        transfers: (transfers || []).map(t => ({
+          id: t.id, country: t.country, purpose: t.purpose,
+          dpf: t.legalMechanism === 'adequacy_decision',
+          status: t.status, riskLevel: t.riskLevel, thirdParty: t.thirdParty,
+          createdAt: t.createdAt,
+        })),
+        dsrList: (dsrList || []).map(r => ({
+          id: r.id, requesterName: (r as any).user?.name || r.userId, requesterEmail: (r as any).user?.email || '',
+          requestType: r.type, status: r.status, description: r.description,
+          deadline: (r as any).deadline || null,
+          createdAt: r.createdAt,
+        })),
+        exportRequests: (exportRequests || []).map(e => ({
+          id: e.id, userId: e.requestedById || '', email: '',
+          status: e.status, format: e.format,
+          createdAt: e.createdAt,
+        })),
+        retentionPolicies: (retentionPolicies || []).map(p => ({
+          id: p.id, category: (p as any).dataCategory || (p as any).category || '',
+          retentionPeriod: String((p as any).retentionDays || ''), action: (p as any).action || 'archive',
+          active: !((p as any).legalHold === false),
+          description: (p as any).description || '',
+        })),
+        dataRetentionDays: org?.dataRetentionDays,
+        encryptionEnabled: org?.encryptionEnabled,
+        recentDsrs: dsrList || [],
+        currentPrivacyPolicy: policies || null,
+        privacyPolicies: policies ? [policies] : [],
+      };
+    } catch (e: any) {
+      this.logger.warn(`GDPR dashboard error: ${e.message?.slice(0, 200)}`);
+      return {
+        dpo: {}, dpiaList: [], consentList: [], transfers: [], dsrList: [],
+        exportRequests: [], retentionPolicies: [],
+        dataRetentionDays: null, encryptionEnabled: null,
+        recentDsrs: [], currentPrivacyPolicy: null, privacyPolicies: [],
+      };
+    }
   }
 }
