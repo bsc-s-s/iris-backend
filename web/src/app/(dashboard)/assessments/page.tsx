@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, ArrowRight, Filter, Building2, ClipboardCheck } from "lucide-react";
+import { Plus, Search, ArrowRight, Filter, Building2, ClipboardCheck, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function AssessmentsPage() {
@@ -24,6 +24,17 @@ export default function AssessmentsPage() {
   };
 
   useEffect(() => { load(); }, [filterStatus]);
+
+  const remove = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("¿Eliminar esta evaluación? Esta acción no se puede deshacer.")) return;
+    try {
+      await api.assessments.delete(id);
+      load();
+    } catch (e: any) {
+      setError(e.message || "Error al eliminar la evaluación");
+    }
+  };
 
   const create = async () => {
     if (!title) return;
@@ -135,6 +146,9 @@ export default function AssessmentsPage() {
                 <span className={`badge ${a.status === "completed" ? "badge-low" : a.status === "in_progress" ? "badge-medium" : "badge-high"}`}>
                   {a.status === "completed" ? "Completado" : a.status === "in_progress" ? "En curso" : "Borrador"}
                 </span>
+                <button onClick={(e) => remove(e, a.id)} className="btn btn-ghost p-1.5 text-iris-400 hover:text-red-400">
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <ArrowRight className="h-4 w-4 text-iris-400" />
               </div>
             </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, Layers } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, Layers, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 
@@ -46,6 +46,7 @@ const SCORE_LABELS = ["", "Muy bajo", "Bajo", "Medio", "Alto", "Crítico"];
 
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [assessment, setAssessment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -74,6 +75,16 @@ export default function AssessmentDetailPage() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  const handleDelete = async () => {
+    if (!confirm("¿Eliminar esta evaluación? Esta acción no se puede deshacer.")) return;
+    try {
+      await api.assessments.delete(id);
+      router.push("/assessments");
+    } catch (e: any) {
+      setMsg("Error al eliminar: " + (e.message || "desconocido"));
+    }
+  };
 
   const submitAll = async () => {
     setSending(true);
@@ -138,10 +149,13 @@ export default function AssessmentDetailPage() {
             {assessment.methodology} · {new Date(assessment.createdAt).toLocaleDateString()}
           </p>
         </div>
-        <span className={`badge ml-auto ${assessment.status === "completed" ? "badge-low" : assessment.status === "in_progress" ? "badge-medium" : "badge-high"}`}>
-          {assessment.status === "completed" ? "Completado" : assessment.status === "in_progress" ? "En curso" : "Borrador"}
-        </span>
-      </div>
+          <span className={`badge ml-auto ${assessment.status === "completed" ? "badge-low" : assessment.status === "in_progress" ? "badge-medium" : "badge-high"}`}>
+            {assessment.status === "completed" ? "Completado" : assessment.status === "in_progress" ? "En curso" : "Borrador"}
+          </span>
+          <button onClick={handleDelete} className="btn btn-ghost p-1.5 text-iris-400 hover:text-red-400" title="Eliminar evaluación">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
 
       {isDraft && step === "select" && (
         <div className="card">
