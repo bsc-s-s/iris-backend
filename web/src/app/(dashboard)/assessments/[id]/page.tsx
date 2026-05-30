@@ -72,8 +72,6 @@ export default function AssessmentChatPage() {
   const buildQuestionList = (areasData: Area[], subAreaIds: string[], existingResponses: Record<string, number>) => {
     const questions: Question[] = [];
     const qSubAreas: Record<string, string> = {};
-    let foundExisting = false;
-    let startIndex = 0;
 
     for (const area of areasData) {
       for (const sa of area.subAreas) {
@@ -81,23 +79,18 @@ export default function AssessmentChatPage() {
         for (const q of sa.questions) {
           questions.push(q);
           qSubAreas[q.id] = sa.name;
-          if (existingResponses[q.id] !== undefined && existingResponses[q.id] > 0) {
-            foundExisting = true;
-          }
-          if (!foundExisting && existingResponses[q.id] === undefined) {
-            startIndex = questions.length - 1;
-          }
         }
       }
     }
 
     setAllQuestions(questions);
     setQuestionSubAreas(qSubAreas);
-    if (foundExisting) {
-      const lastAnswered = questions.findLastIndex(q => existingResponses[q.id] !== undefined && existingResponses[q.id] > 0);
+
+    const lastAnswered = questions.findLastIndex(q => existingResponses[q.id] !== undefined && existingResponses[q.id] > 0);
+    if (lastAnswered >= 0) {
       setCurrentQIndex(Math.min(lastAnswered + 1, questions.length - 1));
     } else {
-      setCurrentQIndex(startIndex);
+      setCurrentQIndex(0);
     }
   };
 
