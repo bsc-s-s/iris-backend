@@ -1,5 +1,5 @@
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AssessmentsService } from './assessments.service';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -14,6 +14,8 @@ import { SubmitResponseDto } from './dto/submit-response.dto';
 @Controller('assessments')
 @UseGuards(AuthGuard('jwt'), TenantGuard, RolesGuard)
 export class AssessmentsController {
+  private readonly logger = new Logger(AssessmentsController.name);
+
   constructor(private assessments: AssessmentsService) {}
 
   @Get()
@@ -58,7 +60,12 @@ export class AssessmentsController {
   @ApiBody({ type: SubmitResponseDto })
   @ApiResponse({ status: 201, description: 'Respuesta guardada' })
   async submitResponse(@Param('id') id: string, @Body() dto: SubmitResponseDto) {
-    return this.assessments.submitResponse(id, dto);
+    try {
+      return await this.assessments.submitResponse(id, dto);
+    } catch (e: any) {
+      this.logger.error(`submitResponse error: ${e?.message || e}`);
+      throw e;
+    }
   }
 
   @Post(':id/calculate')

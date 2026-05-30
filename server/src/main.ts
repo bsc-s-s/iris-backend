@@ -57,6 +57,8 @@ async function bootstrap() {
       `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "metadata" JSONB DEFAULT '{}'::jsonb`,
       // Assessment dynamic areas
       `ALTER TABLE "Assessment" ADD COLUMN IF NOT EXISTS "selectedSubAreaIds" TEXT[] NOT NULL DEFAULT '{}'::text[]`,
+      // Ensure questionId column exists on AssessmentResponse
+      `ALTER TABLE "AssessmentResponse" ADD COLUMN IF NOT EXISTS "questionId" TEXT NOT NULL DEFAULT ''`,
     ];
     for (const sql of migrations) {
       await prisma.$executeRawUnsafe(sql);
