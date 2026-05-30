@@ -320,12 +320,15 @@ export const api = {
     get: (id: string) => request<any>(`/assessments/${id}`),
     create: (data: { title: string; facilityId?: string; methodology?: string }) =>
       request<any>("/assessments", { method: "POST", body: data }),
-    submitResponse: (id: string, data: { questionId: string; questionKey: string; response: any }) =>
+    submitResponse: (id: string, data: { questionId: string; response: any }) =>
       request<any>(`/assessments/${id}/responses`, { method: "POST", body: data }),
     calculate: (id: string) => request<any>(`/assessments/${id}/calculate`, { method: "POST" }),
     generatePlan: (id: string) => request<any>(`/assessments/${id}/plan`, { method: "POST" }),
     delete: (id: string) => request<any>(`/assessments/${id}`, { method: "DELETE" }),
     trends: () => request<any>("/assessments/trends"),
+    areas: () => request<any[]>("/assessments/areas/list"),
+    selectAreas: (id: string, subAreaIds: string[]) =>
+      request<any>(`/assessments/${id}/areas`, { method: "POST", body: { subAreaIds } }),
   },
   facilities: {
     list: () => request<any[]>("/assessments/facilities/list"),

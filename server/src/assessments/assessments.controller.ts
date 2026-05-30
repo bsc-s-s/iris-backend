@@ -100,4 +100,24 @@ export class AssessmentsController {
   ) {
     return this.assessments.createFacility(orgId, body);
   }
+
+  // === Nuevos endpoints para áreas/preguntas dinámicas ===
+
+  @Get('areas/list')
+  @ApiOperation({ summary: 'Obtener todas las áreas, sub-áreas y preguntas' })
+  @ApiResponse({ status: 200, description: 'Áreas con sub-áreas y preguntas' })
+  async getAreas() {
+    return this.assessments.getAreas();
+  }
+
+  @Post(':id/areas')
+  @ApiOperation({ summary: 'Seleccionar sub-áreas a evaluar' })
+  @ApiBody({ schema: { type: 'object', properties: { subAreaIds: { type: 'array', items: { type: 'string' } } } } })
+  @ApiResponse({ status: 200, description: 'Sub-áreas seleccionadas' })
+  async selectAreas(
+    @Param('id') id: string,
+    @Body() body: { subAreaIds: string[] },
+  ) {
+    return this.assessments.selectAreas(id, body.subAreaIds);
+  }
 }

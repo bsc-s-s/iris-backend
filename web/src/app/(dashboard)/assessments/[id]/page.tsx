@@ -1,80 +1,194 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, Layers, Trash2 } from "lucide-react";
+import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, ChevronLeft, Layers, Trash2, MessageSquare, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 
-const RISK_LABELS: Record<string, string> = {
-  fisica: "Física", corporativa: "Corporativa", ejecutiva: "Ejecutiva",
-  operacional: "Operacional", financiero: "Financiero", geopolitico: "Geopolítico",
-  reputacional: "Reputacional", digital_ciber: "Digital/Ciber", insider: "Insider",
-  continuidad: "Continuidad", inteligencia: "Inteligencia", compliance: "Compliance",
-};
-
-const QUESTIONS: Array<{ id: string; key: string; category: string; text: string }> = [
-  { id: "q_fis_01", key: "fisica_control_acceso", category: "fisica", text: "¿Los accesos físicos están controlados con credenciales o biometría?" },
-  { id: "q_fis_02", key: "fisica_vigilancia", category: "fisica", text: "¿Existe vigilancia perimetral y cámaras de seguridad?" },
-  { id: "q_fis_03", key: "fisica_visitas", category: "fisica", text: "¿Hay registro y supervisión de visitantes?" },
-  { id: "q_corp_01", key: "corporativa_estructura", category: "corporativa", text: "¿La estructura organizacional está claramente definida?" },
-  { id: "q_corp_02", key: "corporativa_rotacion", category: "corporativa", text: "¿La rotación de personal es baja y controlada?" },
-  { id: "q_corp_03", key: "corporativa_comunicacion", category: "corporativa", text: "¿Existen canales de comunicación interna eficaces?" },
-  { id: "q_ejec_01", key: "ejecutiva_liderazgo", category: "ejecutiva", text: "¿El liderazgo ejecutivo está estable y visible?" },
-  { id: "q_ejec_02", key: "ejecutiva_sucesion", category: "ejecutiva", text: "¿Hay un plan de sucesión para roles críticos?" },
-  { id: "q_oper_01", key: "operacional_procesos", category: "operacional", text: "¿Los procesos operativos están documentados y actualizados?" },
-  { id: "q_oper_02", key: "operacional_controles", category: "operacional", text: "¿Existen controles operativos para prevenir fallos?" },
-  { id: "q_fin_01", key: "financiero_presupuesto", category: "financiero", text: "¿Hay presupuesto asignado para seguridad y riesgo?" },
-  { id: "q_fin_02", key: "financiero_auditoria", category: "financiero", text: "¿Se realizan auditorías financieras periódicas?" },
-  { id: "q_geo_01", key: "geopolitico_ubicacion", category: "geopolitico", text: "¿Las operaciones están expuestas a riesgos geopolíticos?" },
-  { id: "q_geo_02", key: "geopolitico_regulacion", category: "geopolitico", text: "¿Se monitorean cambios regulatorios en países de operación?" },
-  { id: "q_rep_01", key: "reputacional_imagen", category: "reputacional", text: "¿Existe un plan de gestión de crisis reputacional?" },
-  { id: "q_rep_02", key: "reputacional_redes", category: "reputacional", text: "¿Se monitorea la percepción pública y redes sociales?" },
-  { id: "q_dig_01", key: "digital_ciber_seguridad", category: "digital_ciber", text: "¿Los sistemas críticos están protegidos contra ciberataques?" },
-  { id: "q_dig_02", key: "digital_ciber_respaldo", category: "digital_ciber", text: "¿Se realizan backups cifrados y pruebas de restauración?" },
-  { id: "q_ins_01", key: "insider_monitoreo", category: "insider", text: "¿Se monitorean accesos internos a información sensible?" },
-  { id: "q_ins_02", key: "insider_confidencialidad", category: "insider", text: "¿Los empleados firman acuerdos de confidencialidad?" },
-  { id: "q_con_01", key: "continuidad_bcp", category: "continuidad", text: "¿Existe un plan de continuidad de negocio (BCP)?" },
-  { id: "q_con_02", key: "continuidad_drp", category: "continuidad", text: "¿El plan de recuperación ante desastres (DRP) se prueba periódicamente?" },
-  { id: "q_int_01", key: "inteligencia_amenazas", category: "inteligencia", text: "¿Se recopila inteligencia de amenazas activamente?" },
-  { id: "q_int_02", key: "inteligencia_analisis", category: "inteligencia", text: "¿El análisis de inteligencia se integra en la toma de decisiones?" },
-  { id: "q_com_01", key: "compliance_cumplimiento", category: "compliance", text: "¿Se cumple con todas las regulaciones aplicables?" },
-  { id: "q_com_02", key: "compliance_auditoria", category: "compliance", text: "¿Las auditorías de cumplimiento se realizan al menos anualmente?" },
-];
-
 const SCORE_LABELS = ["", "Muy bajo", "Bajo", "Medio", "Alto", "Crítico"];
+const SCORE_COLORS = ["", "bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-orange-500", "bg-red-500"];
 
-export default function AssessmentDetailPage() {
+type Area = { id: string; name: string; subAreas: SubArea[] };
+type SubArea = { id: string; name: string; questions: Question[] };
+type Question = { id: string; text: string; order: number };
+
+export default function AssessmentChatPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+
   const [assessment, setAssessment] = useState<any>(null);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [phase, setPhase] = useState<"loading" | "intro" | "select" | "answer" | "complete" | "results">("loading");
   const [responses, setResponses] = useState<Record<string, number>>({});
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
-  const [step, setStep] = useState<"select" | "answer">("select");
+  const [selectedSubAreaIds, setSelectedSubAreaIds] = useState<Set<string>>(new Set());
+  const [currentQIndex, setCurrentQIndex] = useState(0);
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const allCategories = Array.from(new Set(QUESTIONS.map((q) => q.category)));
+  // Flatten selected questions
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  const [questionSubAreas, setQuestionSubAreas] = useState<Record<string, string>>({});
 
-  const load = () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setLoadError("");
-    api.assessments.get(id).then((a) => {
+    try {
+      const [a, areasData] = await Promise.all([
+        api.assessments.get(id),
+        api.assessments.areas(),
+      ]);
       setAssessment(a);
+      setAreas(areasData);
+
       const existing: Record<string, number> = {};
       for (const r of (a.responses || []) as any[]) {
         existing[r.questionId] = (r.response as any)?.value ?? 0;
       }
       setResponses(existing);
-      if (Object.keys(existing).length > 0) {
-        setStep("answer");
+
+      if (a.status === "completed" && a.scores?.overall) {
+        setPhase("results");
+      } else if (a.selectedSubAreaIds?.length > 0) {
+        setSelectedSubAreaIds(new Set(a.selectedSubAreaIds));
+        buildQuestionList(areasData, a.selectedSubAreaIds, existing);
+        setPhase("answer");
+      } else if (Object.keys(existing).length > 0) {
+        setPhase("answer");
+      } else {
+        setPhase("intro");
       }
-    }).catch((e) => setLoadError(e.message)).finally(() => setLoading(false));
+    } catch (e: any) {
+      setLoadError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const buildQuestionList = (areasData: Area[], subAreaIds: string[], existingResponses: Record<string, number>) => {
+    const questions: Question[] = [];
+    const qSubAreas: Record<string, string> = {};
+    let foundExisting = false;
+    let startIndex = 0;
+
+    for (const area of areasData) {
+      for (const sa of area.subAreas) {
+        if (!subAreaIds.includes(sa.id)) continue;
+        for (const q of sa.questions) {
+          questions.push(q);
+          qSubAreas[q.id] = sa.name;
+          if (existingResponses[q.id] !== undefined && existingResponses[q.id] > 0) {
+            foundExisting = true;
+          }
+          if (!foundExisting && existingResponses[q.id] === undefined) {
+            startIndex = questions.length - 1;
+          }
+        }
+      }
+    }
+
+    setAllQuestions(questions);
+    setQuestionSubAreas(qSubAreas);
+    if (foundExisting) {
+      const lastAnswered = questions.findLastIndex(q => existingResponses[q.id] !== undefined && existingResponses[q.id] > 0);
+      setCurrentQIndex(Math.min(lastAnswered + 1, questions.length - 1));
+    } else {
+      setCurrentQIndex(startIndex);
+    }
   };
 
-  useEffect(() => { load(); }, [id]);
+  const totalQuestions = allQuestions.length;
+  const currentQuestion = allQuestions[currentQIndex];
+  const currentSubArea = currentQuestion ? questionSubAreas[currentQuestion.id] : "";
+  const answeredCount = allQuestions.filter(q => (responses[q.id] || 0) > 0).length;
+  const allAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
+
+  const handleSelectArea = (area: Area) => {
+    const subIds = area.subAreas.map(sa => sa.id);
+    const next = new Set(selectedSubAreaIds);
+    // Check if any sub-areas from this area are already selected
+    const someSelected = subIds.some(id => next.has(id));
+    if (someSelected) {
+      subIds.forEach(id => next.delete(id));
+    } else {
+      subIds.forEach(id => next.add(id));
+    }
+    setSelectedSubAreaIds(next);
+  };
+
+  const isAreaFullySelected = (area: Area) => area.subAreas.every(sa => selectedSubAreaIds.has(sa.id));
+  const isAreaPartiallySelected = (area: Area) => area.subAreas.some(sa => selectedSubAreaIds.has(sa.id)) && !isAreaFullySelected(area);
+
+  const handleSelectSubArea = (subAreaId: string) => {
+    const next = new Set(selectedSubAreaIds);
+    if (next.has(subAreaId)) next.delete(subAreaId); else next.add(subAreaId);
+    setSelectedSubAreaIds(next);
+  };
+
+  const startAssessment = async () => {
+    const subAreaIds = Array.from(selectedSubAreaIds);
+    if (subAreaIds.length === 0) return;
+
+    try {
+      await api.assessments.selectAreas(id, subAreaIds);
+    } catch {}
+    buildQuestionList(areas, subAreaIds, responses);
+    setPhase("answer");
+  };
+
+  const submitCurrentAnswer = async () => {
+    if (!currentQuestion) return;
+    const value = responses[currentQuestion.id];
+    if (!value || value <= 0) return;
+
+    try {
+      await api.assessments.submitResponse(id, {
+        questionId: currentQuestion.id,
+        response: { value },
+      });
+    } catch {}
+  };
+
+  const goNext = async () => {
+    await submitCurrentAnswer();
+    if (currentQIndex < totalQuestions - 1) {
+      setCurrentQIndex(prev => prev + 1);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentQIndex > 0) {
+      setCurrentQIndex(prev => prev - 1);
+    }
+  };
+
+  const finishAndCalculate = async () => {
+    setSending(true);
+    setMsg("");
+    try {
+      // Save any remaining responses
+      for (const q of allQuestions) {
+        const value = responses[q.id];
+        if (value && value > 0) {
+          await api.assessments.submitResponse(id, {
+            questionId: q.id,
+            response: { value },
+          });
+        }
+      }
+      await api.assessments.calculate(id);
+      const updated = await api.assessments.get(id);
+      setAssessment(updated);
+      setPhase("results");
+    } catch (e: any) {
+      setMsg("Error: " + (e.message || "desconocido"));
+    }
+    setSending(false);
+  };
 
   const handleDelete = async () => {
     if (!confirm("¿Eliminar esta evaluación? Esta acción no se puede deshacer.")) return;
@@ -86,29 +200,7 @@ export default function AssessmentDetailPage() {
     }
   };
 
-  const submitAll = async () => {
-    setSending(true);
-    setMsg("");
-    try {
-      for (const q of QUESTIONS) {
-        const value = responses[q.id];
-        if (value && value > 0) {
-          await api.assessments.submitResponse(id, {
-            questionId: q.id,
-            questionKey: q.key,
-            response: { value },
-          });
-        }
-      }
-      setMsg("Respuestas guardadas correctamente");
-      load();
-    } catch (e: any) {
-      setMsg("Error: " + (e.message || "desconocido"));
-    }
-    setSending(false);
-  };
-
-  if (loading) {
+  if (loading || phase === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-iris-accent border-t-transparent" />
@@ -125,218 +217,384 @@ export default function AssessmentDetailPage() {
   }
 
   const scores = assessment.scores as any;
-  const isDraft = assessment.status === "draft" || !scores?.overall;
 
   const severityColor = (sev: string) =>
     sev === "critical" ? "badge-critical" : sev === "high" ? "badge-high" : sev === "medium" ? "badge-medium" : "badge-low";
 
-  const selectAll = () => setSelectedCategories(new Set(allCategories));
-  const toggleCategory = (cat: string) => {
-    const next = new Set(selectedCategories);
-    if (next.has(cat)) next.delete(cat); else next.add(cat);
-    setSelectedCategories(next);
-  };
+  // === RENDER PHASES ===
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/assessments" className="btn btn-ghost p-2">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-white">{assessment.title}</h1>
-          <p className="text-sm text-iris-400">
-            {assessment.methodology} · {new Date(assessment.createdAt).toLocaleDateString()}
-          </p>
+  const renderIntro = () => (
+    <div className="flex flex-col items-center py-8">
+      <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-iris-accent to-purple-600 shadow-lg shadow-iris-accent/20">
+        <Sparkles className="h-8 w-8 text-white" />
+      </div>
+      <div className="card max-w-2xl">
+        <div className="mb-6 flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-iris-accent/20">
+            <Brain className="h-5 w-5 text-iris-accent" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-white">¡Hola! Soy IRIS</p>
+            <p className="mt-2 text-sm text-iris-300 leading-relaxed">
+              Voy a ayudarte a evaluar los riesgos de tu organización. 
+              Te guiaré a través de preguntas organizadas en <span className="text-white font-medium">4 áreas principales</span> de análisis.
+            </p>
+            <p className="mt-3 text-sm text-iris-300 leading-relaxed">
+              Primero, seleccionemos las áreas que quieres evaluar. Puedes elegir una o varias.
+            </p>
+          </div>
         </div>
-          <span className={`badge ml-auto ${assessment.status === "completed" ? "badge-low" : assessment.status === "in_progress" ? "badge-medium" : "badge-high"}`}>
-            {assessment.status === "completed" ? "Completado" : assessment.status === "in_progress" ? "En curso" : "Borrador"}
-          </span>
-          <button onClick={handleDelete} className="btn btn-ghost p-1.5 text-iris-400 hover:text-red-400" title="Eliminar evaluación">
-            <Trash2 className="h-4 w-4" />
+        <div className="flex justify-end">
+          <button onClick={() => setPhase("select")} className="btn btn-primary">
+            Seleccionar áreas <ChevronRight className="ml-1 h-4 w-4" />
           </button>
         </div>
+      </div>
+    </div>
+  );
 
-      {isDraft && step === "select" && (
-        <div className="card">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-white">Seleccionar áreas a evaluar</h3>
-              <p className="mt-1 text-xs text-iris-400">Elige las áreas de riesgo que deseas analizar en esta evaluación.</p>
+  const renderAreaSelect = () => (
+    <div className="py-6">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-iris-accent/20">
+          <Layers className="h-5 w-5 text-iris-accent" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white">Selecciona las áreas a evaluar</p>
+          <p className="text-xs text-iris-400">Haz clic en cada área para expandir y elegir sub-áreas específicas</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {areas.map((area) => {
+          const fullySelected = isAreaFullySelected(area);
+          const partiallySelected = isAreaPartiallySelected(area);
+          const totalQ = area.subAreas.reduce((s, sa) => s + sa.questions.length, 0);
+          return (
+            <div
+              key={area.id}
+              className={`card cursor-pointer transition-all ${
+                fullySelected ? "border-iris-accent/50" : partiallySelected ? "border-amber-500/30" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2" onClick={() => handleSelectArea(area)}>
+                <h3 className={`text-sm font-semibold ${fullySelected ? "text-iris-accent" : "text-white"}`}>
+                  {area.name}
+                </h3>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                  fullySelected ? "border-iris-accent bg-iris-accent text-white" : partiallySelected ? "border-amber-500 bg-amber-500/20 text-amber-400" : "border-iris-500 text-iris-400"
+                }`}>
+                  {totalQ}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {area.subAreas.map((sa) => {
+                  const saSelected = selectedSubAreaIds.has(sa.id);
+                  return (
+                    <label
+                      key={sa.id}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs cursor-pointer transition-all ${
+                        saSelected ? "bg-iris-accent/10 text-iris-accent" : "text-iris-400 hover:bg-iris-600/30"
+                      }`}
+                      onClick={(e) => { e.stopPropagation(); handleSelectSubArea(sa.id); }}
+                    >
+                      <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${
+                        saSelected ? "border-iris-accent bg-iris-accent" : "border-iris-500"
+                      }`}>
+                        {saSelected && <CheckCircle className="h-3 w-3 text-white" />}
+                      </div>
+                      <span>{sa.name}</span>
+                      <span className="ml-auto text-iris-500">{sa.questions.length}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-            <button onClick={selectAll} className="btn btn-ghost text-xs">Seleccionar todo</button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <p className="text-xs text-iris-400">
+          {selectedSubAreaIds.size} sub-áreas seleccionadas · {allQuestions.length || "—"} preguntas
+        </p>
+        <div className="flex gap-2">
+          <button onClick={() => setPhase("intro")} className="btn btn-ghost text-xs">Volver</button>
+          <button
+            onClick={startAssessment}
+            disabled={selectedSubAreaIds.size === 0}
+            className="btn btn-primary"
+          >
+            Comenzar evaluación <ChevronRight className="ml-1 h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAnswer = () => {
+    if (!currentQuestion) return null;
+
+    const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+    const currentValue = responses[currentQuestion.id] || 0;
+
+    return (
+      <div className="mx-auto max-w-2xl py-6">
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-iris-400">Progreso</span>
+            <span className="text-xs text-iris-400">{answeredCount} de {totalQuestions}</span>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {allCategories.map((cat) => {
-              const count = QUESTIONS.filter((q) => q.category === cat).length;
-              const selected = selectedCategories.has(cat);
+          <div className="h-1.5 rounded-full bg-iris-700/50">
+            <div className="h-1.5 rounded-full bg-gradient-to-r from-iris-accent to-iris-accent/60 transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        {/* Sub-area indicator */}
+        <div className="mb-3 flex items-center gap-2 text-xs text-iris-400">
+          <Layers className="h-3 w-3" />
+          <span>{currentSubArea}</span>
+          <span className="text-iris-600">·</span>
+          <span>Pregunta {currentQIndex + 1}</span>
+        </div>
+
+        {/* Chat bubble */}
+        <div className="mb-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-iris-accent to-purple-600 shadow-lg shadow-iris-accent/20">
+              <Brain className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="rounded-2xl rounded-tl-sm bg-iris-700/60 px-5 py-4 text-sm text-white leading-relaxed shadow-sm">
+                {currentQuestion.text}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rating buttons */}
+        <div className="mb-8">
+          <p className="mb-3 text-center text-xs text-iris-400">¿Cuál es tu evaluación?</p>
+          <div className="flex items-center justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((v) => {
+              const selected = currentValue === v;
               return (
                 <button
-                  key={cat}
-                  onClick={() => toggleCategory(cat)}
-                  className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
-                    selected
-                      ? "border-iris-accent bg-iris-accent/10"
-                      : "border-iris-600/50 bg-iris-700/30 hover:border-iris-500/50"
+                  key={v}
+                  onClick={() => setResponses(prev => ({ ...prev, [currentQuestion.id]: prev[currentQuestion.id] === v ? 0 : v }))}
+                  className={`group relative flex flex-col items-center transition-all ${
+                    selected ? "scale-110" : "hover:scale-105"
                   }`}
                 >
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                    selected ? "bg-iris-accent text-white" : "bg-iris-600 text-iris-300"
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
+                    selected
+                      ? `${SCORE_COLORS[v]} text-white shadow-lg`
+                      : "bg-iris-700/50 text-iris-300 hover:bg-iris-600/60 hover:text-white"
                   }`}>
-                    {count}
+                    {v}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-white">{RISK_LABELS[cat] || cat}</p>
-                    <p className="text-xs text-iris-400">{count} preguntas</p>
-                  </div>
-                  {selected && <CheckCircle className="h-5 w-5 text-iris-accent" />}
+                  <span className={`mt-1.5 text-[10px] font-medium transition-all ${
+                    selected ? "text-white" : "text-iris-500"
+                  }`}>
+                    {SCORE_LABELS[v]}
+                  </span>
                 </button>
               );
             })}
           </div>
-          <div className="mt-4 flex justify-end">
+        </div>
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={goPrev}
+            disabled={currentQIndex === 0}
+            className="btn btn-ghost text-xs disabled:opacity-30"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" /> Anterior
+          </button>
+
+          {currentQIndex < totalQuestions - 1 ? (
             <button
-              onClick={() => { if (selectedCategories.size > 0) setStep("answer"); }}
-              disabled={selectedCategories.size === 0}
-              className="btn btn-primary"
+              onClick={goNext}
+              disabled={!currentValue || currentValue <= 0}
+              className="btn btn-primary text-xs disabled:opacity-50"
             >
-              <ChevronRight className="h-4 w-4" /> Continuar ({selectedCategories.size} áreas)
+              Siguiente <ChevronRight className="ml-1 h-4 w-4" />
             </button>
-          </div>
+          ) : (
+            <button
+              onClick={async () => { await submitCurrentAnswer(); setPhase("complete"); }}
+              disabled={!currentValue || currentValue <= 0}
+              className="btn btn-primary text-xs disabled:opacity-50"
+            >
+              Finalizar <CheckCircle className="ml-1 h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Save status */}
+        <div className="mt-4 text-center">
+          {currentValue > 0 && (
+            <span className="text-[10px] text-iris-500">
+              <CheckCircle className="mr-1 inline h-3 w-3" />
+              Respondido: {SCORE_LABELS[currentValue]}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderComplete = () => (
+    <div className="mx-auto max-w-lg py-12 text-center">
+      <div className="mb-6 flex justify-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/20">
+          <CheckCircle className="h-10 w-10 text-white" />
+        </div>
+      </div>
+      <h2 className="mb-2 text-xl font-bold text-white">¡Evaluación completada!</h2>
+      <p className="mb-6 text-sm text-iris-300 leading-relaxed">
+        Has respondido todas las preguntas seleccionadas. 
+        Ahora presiona "Calcular scores" para procesar tus respuestas y obtener los resultados.
+      </p>
+      {msg && (
+        <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.startsWith("Error") ? "bg-red-900/30 text-red-400" : "bg-green-900/30 text-green-400"}`}>
+          {msg}
         </div>
       )}
+      <button onClick={finishAndCalculate} disabled={sending} className="btn btn-primary text-base px-8 py-3">
+        {sending ? "Calculando..." : <><BarChart3 className="mr-2 h-5 w-5" /> Calcular scores</>}
+      </button>
+    </div>
+  );
 
-      {isDraft && step === "answer" && (
-        <div className="space-y-4">
-          <div className="card">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-white">Responder preguntas</h3>
-                <p className="mt-1 text-xs text-iris-400">Evalúa cada aspecto del 1 (muy bajo riesgo) al 5 (riesgo crítico).</p>
-              </div>
-              <button onClick={() => setStep("select")} className="btn btn-ghost text-xs">Cambiar áreas</button>
-            </div>
-            {msg && (
-              <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.startsWith("Error") ? "bg-red-900/30 text-red-400" : "bg-green-900/30 text-green-400"}`}>
-                {msg}
-              </div>
-            )}
-            {allCategories.filter((c) => selectedCategories.has(c)).map((cat) => (
-              <div key={cat} className="mb-6">
-                <h4 className="mb-3 text-sm font-bold text-iris-accent">{RISK_LABELS[cat] || cat}</h4>
-                <div className="space-y-3">
-                  {QUESTIONS.filter((q) => q.category === cat).map((q) => (
-                    <div key={q.id} className="rounded-lg bg-iris-600/30 p-3">
-                      <p className="mb-2 text-sm text-white">{q.text}</p>
-                      <div className="flex items-center gap-2">
-                        {[1, 2, 3, 4, 5].map((v) => (
-                          <button
-                            key={v}
-                            onClick={() => setResponses((prev) => ({ ...prev, [q.id]: responses[q.id] === v ? 0 : v }))}
-                            className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-medium transition-all ${
-                              responses[q.id] === v
-                                ? "bg-iris-accent text-white shadow-lg shadow-iris-accent/30 scale-110"
-                                : "bg-iris-700/50 text-iris-300 hover:bg-iris-600"
-                            }`}
-                            title={SCORE_LABELS[v]}
-                          >
-                            {v}
-                          </button>
-                        ))}
-                        <span className="ml-2 text-xs text-iris-400">{responses[q.id] ? SCORE_LABELS[responses[q.id]] : ""}</span>
-                      </div>
-                    </div>
-                  ))}
+  const renderResults = () => (
+    <>
+      {scores?.areas && (
+        <div className="card">
+          <div className="mb-2 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-iris-accent" />
+            <h3 className="text-sm font-semibold text-white">Resultados por área</h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {Object.entries(scores.areas).map(([area, data]: [string, any]) => (
+              <div key={area} className="rounded-lg bg-iris-600/50 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-iris-300">{area}</span>
+                  <span className={`badge ${severityColor(data.severity)}`}>{data.severity}</span>
                 </div>
+                <div className="h-2 rounded-full bg-iris-600">
+                  <div className="h-2 rounded-full transition-all" style={{
+                    width: `${(data.avg / 5) * 100}%`,
+                    backgroundColor: data.severity === "critical" ? "#ef4444" : data.severity === "high" ? "#f59e0b" : data.severity === "medium" ? "#3b82f6" : "#10b981",
+                  }} />
+                </div>
+                <p className="mt-1 text-right text-xs text-iris-400">{data.avg.toFixed(1)}/5</p>
               </div>
             ))}
-            <div className="flex gap-2">
-              <button onClick={submitAll} disabled={sending} className="btn btn-primary">
-                {sending ? "Guardando..." : <><CheckCircle className="h-4 w-4" /> Guardar respuestas</>}
-              </button>
-              <button onClick={() => api.assessments.calculate(id).then(load)} className="btn btn-ghost">
-                <BarChart3 className="h-4 w-4" /> Calcular scores
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-
-      {!isDraft && (
-        <>
-          {scores?.categories && (
-            <div className="card">
-              <h3 className="mb-4 text-sm font-semibold text-white">Resultados por categoría</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {Object.entries(scores.categories).map(([cat, data]: [string, any]) => (
-                  <div key={cat} className="rounded-lg bg-iris-600/50 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-iris-300">{RISK_LABELS[cat] || cat}</span>
-                      <span className={`badge ${severityColor(data.severity)}`}>{data.severity}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-iris-600">
-                      <div className="h-2 rounded-full transition-all" style={{
+          {scores?.subAreas && (
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs text-iris-400 hover:text-iris-300">Ver desglose por sub-área</summary>
+              <div className="mt-3 space-y-2">
+                {Object.entries(scores.subAreas).map(([sa, data]: [string, any]) => (
+                  <div key={sa} className="flex items-center gap-3 rounded-lg bg-iris-600/30 px-3 py-2">
+                    <span className="flex-1 text-xs text-iris-300">{sa}</span>
+                    <div className="h-1.5 w-24 rounded-full bg-iris-600">
+                      <div className="h-1.5 rounded-full" style={{
                         width: `${(data.avg / 5) * 100}%`,
                         backgroundColor: data.severity === "critical" ? "#ef4444" : data.severity === "high" ? "#f59e0b" : data.severity === "medium" ? "#3b82f6" : "#10b981",
                       }} />
                     </div>
-                    <p className="mt-1 text-right text-xs text-iris-400">{data.avg.toFixed(1)}/5</p>
+                    <span className="text-xs text-iris-400 w-12 text-right">{data.avg.toFixed(1)}</span>
+                    <span className={`badge ${severityColor(data.severity)}`}>{data.severity}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex items-center justify-between rounded-lg bg-iris-accent/5 p-4">
-                <span className="text-sm font-medium text-white">Score global</span>
-                <span className="text-2xl font-bold text-white">{scores.overall?.avg?.toFixed(1) || "N/A"}<span className="text-sm text-iris-400">/5</span></span>
-              </div>
-            </div>
+            </details>
           )}
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <button onClick={() => api.assessments.calculate(id).then(load)} className="card card-hover flex items-center gap-3">
-              <BarChart3 className="h-5 w-5 text-iris-accent" />
-              <span className="text-sm font-medium text-white">Recalcular scores</span>
-            </button>
-            <button onClick={() => api.assessments.generatePlan(id).then(load)} className="card card-hover flex items-center gap-3">
-              <Shield className="h-5 w-5 text-iris-success" />
-              <span className="text-sm font-medium text-white">Generar plan</span>
-            </button>
-            <button className="card card-hover flex items-center gap-3">
-              <Download className="h-5 w-5 text-iris-warning" />
-              <span className="text-sm font-medium text-white">Exportar reporte</span>
-            </button>
+          <div className="mt-4 flex items-center justify-between rounded-lg bg-iris-accent/5 p-4">
+            <span className="text-sm font-medium text-white">Score global</span>
+            <span className="text-2xl font-bold text-white">{scores.overall?.avg?.toFixed(1) || "N/A"}<span className="text-sm text-iris-400">/5</span></span>
           </div>
-
-          {assessment.vulnerabilities?.length > 0 && (
-            <div className="card">
-              <h3 className="mb-4 text-sm font-semibold text-white">Vulnerabilidades detectadas</h3>
-              <div className="space-y-2">
-                {assessment.vulnerabilities.map((v: any) => (
-                  <div key={v.id} className="flex items-center justify-between rounded-lg bg-iris-600/50 px-4 py-2.5">
-                    <div>
-                      <p className="text-sm font-medium text-white">{v.name}</p>
-                      <p className="text-xs text-iris-400">{v.description}</p>
-                    </div>
-                    <span className={`badge ${severityColor(v.severity)}`}>{v.severity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {assessment.securityPlan && (
-            <div className="card">
-              <h3 className="mb-4 text-sm font-semibold text-white">Plan de seguridad generado</h3>
-              <p className="mb-4 text-sm text-iris-300">{assessment.securityPlan.executiveSummary}</p>
-              {assessment.securityPlan.recommendations?.map((r: string, i: number) => (
-                <div key={i} className="mb-2 flex items-start gap-2 text-sm text-iris-300">
-                  <span className="mt-0.5 text-iris-accent">•</span>
-                  <span>{r}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+        </div>
       )}
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <button onClick={() => api.assessments.calculate(id).then(load)} className="card card-hover flex items-center gap-3">
+          <BarChart3 className="h-5 w-5 text-iris-accent" />
+          <span className="text-sm font-medium text-white">Recalcular scores</span>
+        </button>
+        <button onClick={() => api.assessments.generatePlan(id).then(load)} className="card card-hover flex items-center gap-3">
+          <Shield className="h-5 w-5 text-iris-success" />
+          <span className="text-sm font-medium text-white">Generar plan</span>
+        </button>
+        <button className="card card-hover flex items-center gap-3">
+          <Download className="h-5 w-5 text-iris-warning" />
+          <span className="text-sm font-medium text-white">Exportar reporte</span>
+        </button>
+      </div>
+
+      {assessment.vulnerabilities?.length > 0 && (
+        <div className="card">
+          <h3 className="mb-4 text-sm font-semibold text-white">Vulnerabilidades detectadas</h3>
+          <div className="space-y-2">
+            {assessment.vulnerabilities.map((v: any) => (
+              <div key={v.id} className="flex items-center justify-between rounded-lg bg-iris-600/50 px-4 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-white">{v.name}</p>
+                  <p className="text-xs text-iris-400">{v.description}</p>
+                </div>
+                <span className={`badge ${severityColor(v.severity)}`}>{v.severity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {assessment.securityPlan && (
+        <div className="card">
+          <h3 className="mb-4 text-sm font-semibold text-white">Plan de seguridad generado</h3>
+          <p className="mb-4 text-sm text-iris-300">{assessment.securityPlan.executiveSummary}</p>
+          {assessment.securityPlan.recommendations?.map((r: string, i: number) => (
+            <div key={i} className="mb-2 flex items-start gap-2 text-sm text-iris-300">
+              <span className="mt-0.5 text-iris-accent">•</span>
+              <span>{r}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href="/assessments" className="btn btn-ghost p-2">
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-white">{assessment.title}</h1>
+          <p className="text-xs text-iris-400">
+            {assessment.methodology} · {new Date(assessment.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        <span className={`badge ${assessment.status === "completed" ? "badge-low" : assessment.status === "in_progress" ? "badge-medium" : "badge-high"}`}>
+          {assessment.status === "completed" ? "Completado" : assessment.status === "in_progress" ? "En curso" : "Borrador"}
+        </span>
+        <button onClick={handleDelete} className="btn btn-ghost p-1.5 text-iris-400 hover:text-red-400" title="Eliminar evaluación">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      {phase === "intro" && renderIntro()}
+      {phase === "select" && renderAreaSelect()}
+      {phase === "answer" && renderAnswer()}
+      {phase === "complete" && renderComplete()}
+      {phase === "results" && renderResults()}
     </div>
   );
 }

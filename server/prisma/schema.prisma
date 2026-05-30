@@ -136,12 +136,46 @@ model Facility {
   @@index([organizationId])
 }
 
+model Area {
+  id        String   @id @default(cuid())
+  name      String
+  nameEn    String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subAreas SubArea[]
+}
+
+model SubArea {
+  id        String   @id @default(cuid())
+  name      String
+  nameEn    String?
+  order     Int      @default(0)
+  areaId    String
+  area      Area     @relation(fields: [areaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  text      String
+  order     Int      @default(0)
+  subAreaId String
+  subArea   SubArea  @relation(fields: [subAreaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Assessment {
   id              String    @id @default(cuid())
   title           String
   status          String    @default("draft")
   version         Int       @default(1)
-  methodology     String    @default("iris-v4")
+  methodology     String    @default("iris-v5")
   scores          Json?
   recommendations Json?
   securityPlan    Json?
@@ -157,10 +191,11 @@ model Assessment {
   createdById    String
   createdBy      User          @relation("AssessmentCreator", fields: [createdById], references: [id])
 
-  responses        AssessmentResponse[]
-  vulnerabilities  Vulnerability[]
-  simulations      Simulation[]
-  incidents        Incident[]
+  selectedSubAreaIds String[]
+  responses          AssessmentResponse[]
+  vulnerabilities    Vulnerability[]
+  simulations        Simulation[]
+  incidents          Incident[]
 
   @@index([organizationId])
   @@index([facilityId])
@@ -171,7 +206,6 @@ model Assessment {
 model AssessmentResponse {
   id           String @id @default(cuid())
   questionId   String
-  questionKey  String
   response     Json
 
   assessmentId String
