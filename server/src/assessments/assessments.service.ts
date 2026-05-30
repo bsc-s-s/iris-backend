@@ -19,13 +19,23 @@ export class AssessmentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(organizationId: string, status?: string) {
-    const where: any = { organizationId };
-    if (status) where.status = status;
-    return this.prisma.assessment.findMany({
-      where,
-      orderBy: { updatedAt: 'desc' },
-      include: { facility: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
-    });
+    try {
+      const where: any = { organizationId };
+      if (status) where.status = status;
+      return await this.prisma.assessment.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true, title: true, status: true, methodology: true, scores: true,
+          createdAt: true, updatedAt: true, completedAt: true, facilityId: true, createdById: true,
+          facility: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, name: true } },
+        },
+      });
+    } catch (e: any) {
+      this.logger.error(`findAll error: ${e?.message || e}`);
+      throw e;
+    }
   }
 
   async findOne(id: string) {

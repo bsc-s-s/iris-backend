@@ -191,7 +191,7 @@ model Assessment {
   createdById    String
   createdBy      User          @relation("AssessmentCreator", fields: [createdById], references: [id])
 
-  selectedSubAreaIds String[]
+  selectedSubAreaIds String[] @default([])
   responses          AssessmentResponse[]
   vulnerabilities    Vulnerability[]
   simulations        Simulation[]

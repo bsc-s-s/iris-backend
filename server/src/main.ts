@@ -258,6 +258,8 @@ async function bootstrap() {
   app.use('/api/health', async (req: any, res: any) => {
     let dbStatus = 'unknown';
     let userCount = -1;
+    let assessmentQueryOk = false;
+    let assessmentQueryError = '';
     try {
       const prisma = app.get(PrismaService);
       await prisma.$queryRaw`SELECT 1`;
@@ -266,7 +268,14 @@ async function bootstrap() {
     } catch (e: any) {
       dbStatus = 'error: ' + e.message.slice(0, 200);
     }
-    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL, db: dbStatus, users: userCount, dbName: process.env.DB_NAME, dbHost: process.env.DB_HOST, dbUser: process.env.DB_USER });
+    try {
+      const prisma = app.get(PrismaService);
+      const assessments = await prisma.assessment.findMany({ take: 1 });
+      assessmentQueryOk = true;
+    } catch (e: any) {
+      assessmentQueryError = e.message?.slice(0, 300) || String(e);
+    }
+    res.json({ ok: true, groq: !!process.env.GROQ_KEY, supabase: !!process.env.SB_URL, db: dbStatus, users: userCount, assessmentQueryOk, assessmentQueryError, dbName: process.env.DB_NAME, dbHost: process.env.DB_HOST, dbUser: process.env.DB_USER });
   });
 
   // Legacy Groq proxy (old SPA uses /api/anthropic/messages)
