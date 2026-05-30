@@ -324,6 +324,8 @@ export const api = {
       request<any>(`/assessments/${id}/responses`, { method: "POST", body: data }),
     calculate: (id: string) => request<any>(`/assessments/${id}/calculate`, { method: "POST" }),
     generatePlan: (id: string) => request<any>(`/assessments/${id}/plan`, { method: "POST" }),
+    generateProtocol: (id: string, type: string) =>
+      request<any>(`/assessments/${id}/protocol/${type}`, { method: "POST" }),
     delete: (id: string) => request<any>(`/assessments/${id}`, { method: "DELETE" }),
     trends: () => request<any>("/assessments/trends"),
     areas: () => request<any[]>("/assessments/areas/list"),

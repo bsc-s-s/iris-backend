@@ -47,6 +47,7 @@ export class AssessmentsService {
         responses: true,
         vulnerabilities: true,
         simulations: true,
+        protocols: true,
       },
     });
     if (!assessment) throw new NotFoundException('Assessment not found');
@@ -452,11 +453,226 @@ export class AssessmentsService {
 
     for (const p of protocols) {
       await this.prisma.securityProtocol.create({
-        data: { ...p, organizationId: assessment.organizationId },
+        data: { ...p, type: 'plan_seguridad', organizationId: assessment.organizationId },
       });
     }
 
     return plan;
+  }
+
+  async generateProtocol(assessmentId: string, protocolType: string, organizationId: string) {
+    const assessment = await this.findOne(assessmentId);
+    const scores = assessment.scores as any;
+    const orgName = assessment.organizationId;
+
+    const templates: Record<string, { name: string; description: string; category: string; steps: string[] }> = {
+      plan_autoproteccion: {
+        name: 'Plan de Autoprotección',
+        description: 'Plan integral de autoprotección para la organización, estableciendo medidas de seguridad pasiva y activa.',
+        category: 'Plan de Seguridad',
+        steps: [
+          'Identificar y evaluar riesgos internos y externos de la organización.',
+          'Establecer medidas de seguridad física: control de accesos, vigilancia perimetral, sistemas de alarma.',
+          'Definir procedimientos de actuación ante emergencias y amenazas.',
+          'Designar responsables y equipos de autoprotección por áreas o turnos.',
+          'Implementar sistemas de comunicación interna para alertas y notificaciones.',
+          'Realizar simulacros periódicos de autoprotección con todo el personal.',
+          'Establecer protocolos de coordinación con servicios de emergencia externos.',
+          'Revisar y actualizar el plan semestralmente o tras cada incidente significativo.',
+        ],
+      },
+      plan_emergencia: {
+        name: 'Plan de Emergencia',
+        description: 'Plan de respuesta ante emergencias, definiendo roles, rutas de evacuación y procedimientos de actuación.',
+        category: 'Plan de Emergencia',
+        steps: [
+          'Identificar tipos de emergencia potenciales según la actividad y ubicación de la organización.',
+          'Definir organigrama de emergencia: director, jefes de sector, equipos de primera intervención.',
+          'Establecer rutas de evacuación primarias y alternativas, señalizadas y despejadas.',
+          'Designar puntos de reunión seguros externos e internos.',
+          'Implementar sistemas de alerta y megafonía para comunicación en emergencias.',
+          'Definir procedimientos para cada tipo de emergencia: incendio, inundación, sismo, amenaza.',
+          'Establecer protocolo de comunicación con familiares y medios de comunicación.',
+          'Programar simulacros trimestrales y ejercicios de mesa semestrales.',
+        ],
+      },
+      plan_seguridad: {
+        name: 'Plan de Seguridad',
+        description: 'Plan director de seguridad de la organización, integrando todas las medidas y protocolos existentes.',
+        category: 'Plan de Seguridad',
+        steps: [
+          'Realizar análisis de riesgos y vulnerabilidades de la organización.',
+          'Definir política de seguridad corporativa aprobada por la dirección.',
+          'Establecer organigrama de seguridad con responsabilidades claras.',
+          'Implementar controles de acceso físico y lógico basados en el principio de mínimo privilegio.',
+          'Desplegar sistemas de videovigilancia y detección perimetral.',
+          'Establecer procedimientos de gestión de incidentes de seguridad.',
+          'Implementar programa de concienciación y formación en seguridad para todo el personal.',
+          'Realizar auditorías de seguridad internas y externas periódicamente.',
+          'Establecer métricas e indicadores para medir la efectividad del plan.',
+        ],
+      },
+      hipotesis_desastre_natural: {
+        name: 'Protocolo ante Desastre Natural',
+        description: 'Procedimiento de actuación ante desastres naturales como terremotos, inundaciones, huracanes o incendios forestales.',
+        category: 'Protocolo de Emergencia',
+        steps: [
+          'Activar sistema de alerta temprana y comunicación masiva al personal.',
+          'Ejecutar procedimientos de evacuación según el tipo de desastre (vertical para inundaciones, horizontal para terremotos).',
+          'Verificar integridad estructural de las instalaciones antes de permitir el reingreso.',
+          'Activar equipos de primera respuesta y brigadas de emergencia internas.',
+          'Establecer centro de coordinación de emergencias con comunicaciones redundantes.',
+          'Contactar con servicios de emergencia externos: bomberos, protección civil, ambulancias.',
+          'Evaluar daños y activar plan de continuidad de negocio si es necesario.',
+          'Realizar censo de personal y visitantes para verificar que todos están a salvo.',
+        ],
+      },
+      hipotesis_atentado: {
+        name: 'Protocolo ante Atentado',
+        description: 'Procedimiento de actuación ante un atentado con explosivos o artefactos sospechosos.',
+        category: 'Protocolo de Seguridad',
+        steps: [
+          'Activar protocolo de emergencia máximo y notificar a las autoridades competentes.',
+          'Evacuar la zona de impacto y establecer perímetro de seguridad de 300 metros.',
+          'NO manipular objetos sospechosos. No usar radios ni teléfonos cerca del artefacto.',
+          'Activar equipos de búsqueda de artefactos secundarios en instalaciones.',
+          'Establecer puesto de mando avanzado y punto de reunión alternativo.',
+          'Coordinar con fuerzas y cuerpos de seguridad: Policía Nacional, Guardia Civil, TEDAX.',
+          'Gestionar la comunicación con medios de forma centralizada y controlada.',
+          'Preservar pruebas y facilitar la investigación policial posterior.',
+        ],
+      },
+      hipotesis_tirador_activo: {
+        name: 'Protocolo ante Tirador Activo',
+        description: 'Procedimiento de actuación ante un incidente con tirador activo en las instalaciones.',
+        category: 'Protocolo de Seguridad',
+        steps: [
+          'Activar alerta inmediata: "Código Rojo - Tirador Activo" por megafonía o sistema de alerta.',
+          'Ejecutar procedimiento "Correr, Esconderse, Luchar": evacuar si es seguro, atrincherarse si no, forcejear como último recurso.',
+          'Bloquear y barricar puertas con muebles, apagar luces, silenciar dispositivos móviles.',
+          'NO abrir la puerta hasta recibir confirmación de las autoridades.',
+          'Atención a heridos solo si es seguro, aplicar torniquetes y primeros auxilios básicos.',
+          'Proporcionar a la policía información: ubicación, descripción del atacante, tipo de arma.',
+          'Establecer punto de reunión secundario para supervivientes.',
+          'Activar apoyo psicológico para afectados y testigos tras el incidente.',
+        ],
+      },
+      hipotesis_toma_rehenes: {
+        name: 'Protocolo ante Toma de Rehenes',
+        description: 'Procedimiento de actuación durante una situación de toma de rehenes en las instalaciones.',
+        category: 'Protocolo de Seguridad',
+        steps: [
+          'NO confrontar a los agresores. Mantener la calma y seguir sus instrucciones.',
+          'Activar alerta silenciosa si es posible sin ser detectado.',
+          'Aislar la zona y evacuar áreas no comprometidas.',
+          'Establecer comunicación con los agresores solo si se está entrenado para ello.',
+          'Proporcionar a las autoridades: número de agresores, descripción, armas, ubicación exacta.',
+          'NO permitir el intercambio de rehenes por personal no entrenado.',
+          'Preparar planos de la zona e información de utilidad para las fuerzas especiales.',
+          'Tras la resolución, activar apoyo psicológico y atención médica inmediata.',
+        ],
+      },
+      hipotesis_robos_hurtos: {
+        name: 'Protocolo ante Robos y Hurtos',
+        description: 'Procedimiento de prevención y actuación ante robos, hurtos y otros delitos contra la propiedad.',
+        category: 'Protocolo de Seguridad',
+        steps: [
+          'Reforzar medidas de seguridad pasiva: alarmas, cámaras, cerraduras de seguridad, iluminación.',
+          'Establecer procedimiento de denuncia obligatorio ante cualquier sustracción.',
+          'Implementar control de inventarios y activos con responsabilidad asignada.',
+          'Formar al personal en prevención de robos y hurtos: no dejar objetos de valor a la vista.',
+          'Activar protocolo de bloqueo de accesos y alerta al personal de seguridad ante un robo en curso.',
+          'NO intervenir físicamente si el agresor porta armas. Priorizar la seguridad de las personas.',
+          'Preservar la escena para la investigación policial: no tocar, no limpiar.',
+          'Revisar grabaciones de videovigilancia y proporcionarlas a las autoridades.',
+          'Realizar análisis post-incidente para identificar vulnerabilidades y mejorar medidas.',
+        ],
+      },
+      hipotesis_violencia_genero: {
+        name: 'Protocolo ante Violencia de Género',
+        description: 'Procedimiento de actuación y apoyo ante casos de violencia de género en el ámbito laboral.',
+        category: 'Protocolo Social',
+        steps: [
+          'Garantizar un entorno seguro y de confidencialidad para la víctima.',
+          'Activar el protocolo interno de acoso y violencia de género de la organización.',
+          'Designar un interlocutor/a formado en violencia de género para acompañar a la víctima.',
+          'Facilitar los recursos de asistencia: teléfono 016, casas de acogida, asesoramiento legal.',
+          'Aplicar medidas de protección laboral: cambio de puesto, horario flexible, teletrabajo.',
+          'Informar a la autoridad laboral y activar los protocolos de riesgo laboral por VDG.',
+          'Solicitar orden de protección si existe riesgo para la víctima en el entorno laboral.',
+          'Formar a toda la plantilla en identificación y prevención de la violencia de género.',
+          'Realizar seguimiento periódico del caso y mantener la confidencialidad.',
+        ],
+      },
+      hipotesis_violacion: {
+        name: 'Protocolo ante Violación o Agresión Sexual',
+        description: 'Procedimiento de actuación inmediata ante una agresión sexual en el ámbito laboral.',
+        category: 'Protocolo Social',
+        steps: [
+          'Garantizar la seguridad inmediata de la víctima y trasladarla a un entorno seguro.',
+          'Activar los servicios de emergencia: 112, urgencias hospitalarias, atención psicológica.',
+          'NO lavar, cambiar ropa, ni alterar ninguna posible prueba. Preservar todas las evidencias.',
+          'Acompañar a la víctima al hospital para reconocimiento forense y profilaxis de emergencia.',
+          'Activar el protocolo de acoso sexual de la organización de forma inmediata.',
+          'Designar una persona de apoyo formada para acompañar a la víctima durante todo el proceso.',
+          'Informar a la víctima de sus derechos y recursos disponibles: asistencia jurídica gratuita.',
+          'Suspender cautelarmente al agresor si es personal de la organización, sin prejuzgar.',
+          'Activar apoyo psicológico especializado para la víctima a corto y largo plazo.',
+          'Instruir diligencias y poner el caso en conocimiento de la autoridad judicial.',
+        ],
+      },
+      hipotesis_homicidio: {
+        name: 'Protocolo ante Homicidio o Muerte Violenta',
+        description: 'Procedimiento de actuación ante un homicidio o muerte violenta en las instalaciones de la organización.',
+        category: 'Protocolo de Crisis',
+        steps: [
+          'Aislar inmediatamente la escena y evitar el acceso de personal no autorizado.',
+          'Activar servicios de emergencia: 112, policía, servicios funerarios.',
+          'NO mover el cuerpo ni alterar la escena bajo ninguna circunstancia.',
+          'Identificar y retener a posibles testigos para declaración a la policía.',
+          'Activar el comité de crisis de la organización y designar portavoz único.',
+          'Comunicar internamente con respeto y sensibilidad, evitando rumores.',
+          'Gestionar la comunicación externa con medios de forma controlada y respetuosa.',
+          'Activar apoyo psicológico para empleados, especialmente para testigos directos.',
+          'Coordinar con la policía científica y facilitar el acceso a la escena.',
+          'Evaluar impacto en las operaciones y activar plan de continuidad si es necesario.',
+        ],
+      },
+    };
+
+    const template = templates[protocolType];
+    if (!template) throw new NotFoundException(`Tipo de protocolo no válido: ${protocolType}`);
+
+    const priority = scores?.overall?.severity === 'critical' ? 'critical'
+      : scores?.overall?.severity === 'high' ? 'high'
+      : scores?.overall?.severity === 'medium' ? 'medium' : 'low';
+
+    const implementation = {
+      steps: template.steps.map((step, i) => ({
+        order: i + 1,
+        action: step,
+        status: 'pending',
+        assignedTo: '',
+        deadline: '',
+      })),
+      assessmentScore: scores?.overall?.avg || 0,
+      generatedAt: new Date().toISOString(),
+    };
+
+    return this.prisma.securityProtocol.create({
+      data: {
+        name: template.name,
+        description: template.description,
+        type: protocolType,
+        category: template.category,
+        priority,
+        status: 'active',
+        implementation,
+        template: protocolType,
+        organizationId,
+        assessmentId,
+      },
+    });
   }
 
   async getTrends(organizationId: string) {

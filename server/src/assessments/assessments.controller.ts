@@ -117,6 +117,17 @@ export class AssessmentsController {
     return this.assessments.getAreas();
   }
 
+  @Post(':id/protocol/:type')
+  @ApiOperation({ summary: 'Generar un protocolo de seguridad específico para la evaluación' })
+  @ApiResponse({ status: 201, description: 'Protocolo generado' })
+  async generateProtocol(
+    @Param('id') id: string,
+    @Param('type') type: string,
+    @CurrentUser('organizationId') orgId: string,
+  ) {
+    return this.assessments.generateProtocol(id, type, orgId);
+  }
+
   @Post(':id/areas')
   @ApiOperation({ summary: 'Seleccionar sub-áreas a evaluar' })
   @ApiBody({ schema: { type: 'object', properties: { subAreaIds: { type: 'array', items: { type: 'string' } } } } })

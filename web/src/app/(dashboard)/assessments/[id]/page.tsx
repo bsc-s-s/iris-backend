@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, ChevronLeft, Layers, Trash2, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Brain, Shield, Download, BarChart3, CheckCircle, ChevronRight, ChevronLeft, Layers, Trash2, MessageSquare, Sparkles, FileText, AlertTriangle, Users, Activity, Flame, Crosshair, Eye, Lock, Heart, Skull, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 
@@ -27,6 +27,7 @@ export default function AssessmentChatPage() {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
+  const [protocolLoading, setProtocolLoading] = useState<string | null>(null);
 
   // Flatten selected questions
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
@@ -210,6 +211,42 @@ export default function AssessmentChatPage() {
   }
 
   const scores = assessment.scores as any;
+
+  const handleGenerateProtocol = async (type: string) => {
+    setProtocolLoading(type);
+    setMsg("");
+    try {
+      await api.assessments.generateProtocol(id, type);
+      await load();
+      setMsg(`Protocolo "${type.replace(/_/g, ' ')}" generado correctamente`);
+    } catch (e: any) {
+      setMsg("Error: " + (e.message || "desconocido"));
+    }
+    setProtocolLoading(null);
+  };
+
+  const exportReport = () => {
+    if (!assessment) return;
+    const data = {
+      title: assessment.title,
+      methodology: assessment.methodology,
+      status: assessment.status,
+      scores: assessment.scores,
+      vulnerabilities: assessment.vulnerabilities,
+      securityPlan: assessment.securityPlan,
+      protocols: assessment.protocols,
+      createdAt: assessment.createdAt,
+      completedAt: assessment.completedAt,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `informe-${assessment.title.replace(/\s+/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMsg("Reporte exportado correctamente");
+  };
 
   const severityColor = (sev: string) =>
     sev === "critical" ? "badge-critical" : sev === "high" ? "badge-high" : sev === "medium" ? "badge-medium" : "badge-low";
@@ -524,11 +561,95 @@ export default function AssessmentChatPage() {
           <Shield className="h-5 w-5 text-iris-success" />
           <span className="text-sm font-medium text-white">Generar plan</span>
         </button>
-        <button className="card card-hover flex items-center gap-3">
+        <button onClick={exportReport} className="card card-hover flex items-center gap-3">
           <Download className="h-5 w-5 text-iris-warning" />
           <span className="text-sm font-medium text-white">Exportar reporte</span>
         </button>
       </div>
+
+      {/* Planificación de Seguridad */}
+      <div className="card">
+        <div className="mb-4 flex items-center gap-2">
+          <Shield className="h-5 w-5 text-iris-accent" />
+          <h3 className="text-sm font-semibold text-white">Planificación de Seguridad</h3>
+        </div>
+        <p className="mb-4 text-xs text-iris-400">Genera planes y protocolos de seguridad específicos para tu organización</p>
+
+        <div className="mb-3 text-xs font-medium text-iris-300">Planes</div>
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          {[
+            { type: "plan_autoproteccion", label: "Autoprotección", icon: <Shield className="h-4 w-4" />, color: "text-emerald-400" },
+            { type: "plan_emergencia", label: "Emergencia", icon: <AlertTriangle className="h-4 w-4" />, color: "text-amber-400" },
+            { type: "plan_seguridad", label: "Seguridad", icon: <Lock className="h-4 w-4" />, color: "text-sky-400" },
+          ].map(p => (
+            <button key={p.type} onClick={() => handleGenerateProtocol(p.type)}
+              disabled={protocolLoading !== null}
+              className="card card-hover flex items-center gap-2 p-3 disabled:opacity-50">
+              <span className={p.color}>{p.icon}</span>
+              <span className="text-xs font-medium text-white">{p.label}</span>
+              {protocolLoading === p.type && <span className="ml-auto h-3 w-3 animate-spin rounded-full border border-iris-accent border-t-transparent" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-3 text-xs font-medium text-iris-300">Protocolos por Escenario</div>
+        <div className="grid gap-2 sm:grid-cols-4">
+          {[
+            { type: "hipotesis_desastre_natural", label: "Desastre Natural", icon: <Activity className="h-3.5 w-3.5" />, color: "text-orange-400" },
+            { type: "hipotesis_atentado", label: "Atentado", icon: <Flame className="h-3.5 w-3.5" />, color: "text-red-400" },
+            { type: "hipotesis_tirador_activo", label: "Tirador Activo", icon: <Crosshair className="h-3.5 w-3.5" />, color: "text-red-500" },
+            { type: "hipotesis_toma_rehenes", label: "Toma de Rehenes", icon: <Eye className="h-3.5 w-3.5" />, color: "text-red-400" },
+            { type: "hipotesis_robos_hurtos", label: "Robos y Hurtos", icon: <Lock className="h-3.5 w-3.5" />, color: "text-amber-400" },
+            { type: "hipotesis_violencia_genero", label: "Violencia de Género", icon: <Heart className="h-3.5 w-3.5" />, color: "text-pink-400" },
+            { type: "hipotesis_violacion", label: "Agresión Sexual", icon: <AlertTriangle className="h-3.5 w-3.5" />, color: "text-pink-500" },
+            { type: "hipotesis_homicidio", label: "Homicidio", icon: <Skull className="h-3.5 w-3.5" />, color: "text-red-600" },
+          ].map(p => (
+            <button key={p.type} onClick={() => handleGenerateProtocol(p.type)}
+              disabled={protocolLoading !== null}
+              className="card card-hover flex items-center gap-2 p-2.5 disabled:opacity-50">
+              <span className={p.color}>{p.icon}</span>
+              <span className="text-[11px] font-medium text-white">{p.label}</span>
+              {protocolLoading === p.type && <span className="ml-auto h-3 w-3 animate-spin rounded-full border border-iris-accent border-t-transparent" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Protocolos generados */}
+      {assessment.protocols?.length > 0 && (
+        <div className="card">
+          <h3 className="mb-4 text-sm font-semibold text-white">Protocolos Generados</h3>
+          <div className="space-y-2">
+            {assessment.protocols.map((p: any) => (
+              <div key={p.id} className="flex items-start justify-between rounded-lg bg-iris-600/50 px-4 py-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white">{p.name}</span>
+                    <span className={`badge ${p.priority === "critical" ? "badge-critical" : p.priority === "high" ? "badge-high" : p.priority === "medium" ? "badge-medium" : "badge-low"}`}>
+                      {p.priority}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-iris-400">{p.description}</p>
+                  {p.implementation?.steps && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-[10px] text-iris-accent hover:text-iris-300">Ver pasos</summary>
+                      <div className="mt-1 space-y-1">
+                        {p.implementation.steps.map((s: any, i: number) => (
+                          <div key={i} className="flex items-start gap-2 text-[10px] text-iris-400">
+                            <span className="mt-0.5 shrink-0 text-iris-accent">{i + 1}.</span>
+                            <span>{s.action}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+                <span className={`badge ${p.status === "active" ? "badge-low" : "badge-medium"}`}>{p.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {assessment.vulnerabilities?.length > 0 && (
         <div className="card">

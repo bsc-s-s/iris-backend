@@ -60,6 +60,9 @@ async function bootstrap() {
       // Ensure questionId column exists on AssessmentResponse
       `ALTER TABLE "AssessmentResponse" ADD COLUMN IF NOT EXISTS "questionId" TEXT NOT NULL DEFAULT ''`,
       `ALTER TABLE "AssessmentResponse" DROP COLUMN IF EXISTS "questionKey"`,
+      `ALTER TABLE "SecurityProtocol" ADD COLUMN IF NOT EXISTS "type" TEXT NOT NULL DEFAULT 'custom'`,
+      `ALTER TABLE "SecurityProtocol" ADD COLUMN IF NOT EXISTS "template" TEXT`,
+      `ALTER TABLE "SecurityProtocol" ADD COLUMN IF NOT EXISTS "assessmentId" TEXT`,
     ];
     for (const sql of migrations) {
       await prisma.$executeRawUnsafe(sql);
