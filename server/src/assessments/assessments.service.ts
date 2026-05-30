@@ -66,24 +66,29 @@ export class AssessmentsService {
   }
 
   async getAreas() {
-    const existing = await this.prisma.area.findFirst();
-    if (!existing) {
-      await this.seedAreas();
-    }
-    return this.prisma.area.findMany({
-      orderBy: { order: 'asc' },
-      include: {
-        subAreas: {
-          orderBy: { order: 'asc' },
-          include: {
-            questions: {
-              orderBy: { order: 'asc' },
-              select: { id: true, text: true, order: true, subAreaId: true },
+    try {
+      const existing = await this.prisma.area.findFirst();
+      if (!existing) {
+        await this.seedAreas();
+      }
+      return await this.prisma.area.findMany({
+        orderBy: { order: 'asc' },
+        include: {
+          subAreas: {
+            orderBy: { order: 'asc' },
+            include: {
+              questions: {
+                orderBy: { order: 'asc' },
+                select: { id: true, text: true, order: true, subAreaId: true },
+              },
             },
           },
         },
-      },
-    });
+      });
+    } catch (e: any) {
+      this.logger.error(`getAreas error: ${e?.message || e}`);
+      return [];
+    }
   }
 
   private async seedAreas() {
