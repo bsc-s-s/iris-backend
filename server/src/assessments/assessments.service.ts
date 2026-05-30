@@ -214,6 +214,18 @@ export class AssessmentsService {
     return { assessments: trends, count: trends.length };
   }
 
+  async remove(id: string) {
+    const assessment = await this.prisma.assessment.findUnique({ where: { id } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    await this.prisma.assessmentResponse.deleteMany({ where: { assessmentId: id } });
+    await this.prisma.vulnerability.deleteMany({ where: { assessmentId: id } });
+    await this.prisma.simulation.deleteMany({ where: { assessmentId: id } });
+    await this.prisma.assessment.delete({ where: { id } });
+
+    return { ok: true, id };
+  }
+
   async getFacilities(organizationId: string) {
     return this.prisma.facility.findMany({
       where: { organizationId },

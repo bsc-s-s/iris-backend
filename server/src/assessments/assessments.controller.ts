@@ -1,9 +1,10 @@
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AssessmentsService } from './assessments.service';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { SubmitResponseDto } from './dto/submit-response.dto';
@@ -72,6 +73,15 @@ export class AssessmentsController {
   @ApiResponse({ status: 200, description: 'Plan de seguridad generado' })
   async generatePlan(@Param('id') id: string) {
     return this.assessments.generateSecurityPlan(id);
+  }
+
+  @Delete(':id')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Eliminar evaluación (solo super admin)' })
+  @ApiResponse({ status: 200, description: 'Evaluación eliminada' })
+  @ApiResponse({ status: 404, description: 'Evaluación no encontrada' })
+  async remove(@Param('id') id: string) {
+    return this.assessments.remove(id);
   }
 
   @Get('facilities/list')

@@ -324,6 +324,7 @@ export const api = {
       request<any>(`/assessments/${id}/responses`, { method: "POST", body: data }),
     calculate: (id: string) => request<any>(`/assessments/${id}/calculate`, { method: "POST" }),
     generatePlan: (id: string) => request<any>(`/assessments/${id}/plan`, { method: "POST" }),
+    delete: (id: string) => request<any>(`/assessments/${id}`, { method: "DELETE" }),
     trends: () => request<any>("/assessments/trends"),
   },
   facilities: {
