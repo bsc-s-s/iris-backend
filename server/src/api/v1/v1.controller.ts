@@ -1,5 +1,5 @@
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { Controller, Get, Post, Body, Param, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
@@ -19,6 +19,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 @UseGuards(AuthGuard('jwt'), TenantGuard)
 @ApiBearerAuth()
 export class V1Controller {
+  private readonly logger = new Logger(V1Controller.name);
+
   constructor(
     private riskEngine: RiskEngine,
     private aiEngine: AiEngine,
@@ -47,9 +49,10 @@ export class V1Controller {
         userActivity: data.userActivity,
       });
     } catch (e: any) {
+      this.logger.error(`getIntelligence error: ${e?.message || e || 'Unknown error'}`);
       return {
         error: 'Partial intelligence data available',
-        message: e.message,
+        message: e?.message || String(e) || 'Unknown error',
         riskScore: 0, riskLevel: 'LOW', invisibleRiskIndex: 0, organizationalFragility: 0,
         categories: {}, recommendations: [], correlations: [],
         benchmark: { vsIndustry: 0, vsPeriod: 0, percentile: 0, trend: 'stable' },

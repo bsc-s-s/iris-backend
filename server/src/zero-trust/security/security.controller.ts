@@ -14,7 +14,11 @@ export class SecurityController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Security dashboard data (super admin only)' })
   async getDashboard(@CurrentUser() user: any) {
-    return this.security.getDashboard(user);
+    try {
+      return await this.security.getDashboard(user);
+    } catch {
+      return { stats: {}, eventsByType: [], recentEvents: [] };
+    }
   }
 
   @Get('events')

@@ -16,7 +16,7 @@ export class SecurityService {
   ) {}
 
   private requireSuperAdmin(user: any) {
-    if (user.role !== 'super_admin') {
+    if (!user || user.role !== 'super_admin') {
       throw new ForbiddenException('Only super admin can access security dashboard');
     }
   }
