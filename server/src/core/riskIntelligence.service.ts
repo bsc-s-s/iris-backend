@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { RiskEngine } from './riskEngine';
 import { AiEngine } from './aiEngine';
 import { PatternDetectionEngine } from './patternDetection';
@@ -5,6 +6,7 @@ import { PredictionEngine } from './predictionEngine';
 import { CorrelationEngine } from './correlationEngine';
 import { AnomalyDetectionEngine } from './anomalyEngine';
 
+@Injectable()
 export class RiskIntelligenceService {
   constructor(
     private riskEngine: RiskEngine,

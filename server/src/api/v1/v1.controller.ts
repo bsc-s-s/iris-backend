@@ -38,7 +38,7 @@ export class V1Controller {
   async getIntelligence(@CurrentUser('organizationId') orgId: string) {
     try {
       const data = await this.loadOrgData(orgId);
-      return this.riskIntelligence.comprehensiveAnalysis({
+      return await this.riskIntelligence.comprehensiveAnalysis({
         organizationId: orgId,
         categoryScores: data.categoryScores,
         orgProfile: data.profile,

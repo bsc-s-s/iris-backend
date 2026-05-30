@@ -122,7 +122,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Datos del usuario y organización' })
   async me(@CurrentUser() user: any) {
     const full = await this.auth.validateUser(user.id);
-    if (!full) return { user: null, organization: null };
+    if (!full || !full.organization) return { user: null, organization: null };
     return {
       user: {
         id: full.id, email: full.email, name: full.name,

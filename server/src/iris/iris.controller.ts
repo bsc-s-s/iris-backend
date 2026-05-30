@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, Query, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -14,6 +14,7 @@ import { ReportEngine } from './reports/report-engine.service';
 @Controller('iris')
 @UseGuards(AuthGuard('jwt'))
 export class IrisController {
+  private readonly logger = new Logger(IrisController.name);
   constructor(
     private iris: IrisService,
     private cognitive: CognitiveEngine,
@@ -34,7 +35,12 @@ export class IrisController {
   // ─── IRIS SCAN ───
   @Post('scan/start')
   async startScan(@Req() req: any, @Body() body: { title?: string; categories?: string[] }) {
-    return this.scan.startScan(req.user.organizationId, req.user.id, body);
+    try {
+      return await this.scan.startScan(req.user.organizationId, req.user.id, body);
+    } catch (e: any) {
+      this.logger.error(`startScan error: ${e.message}`);
+      throw e;
+    }
   }
 
   @Get('scan/:id')
