@@ -34,17 +34,32 @@ export class V1Controller {
   @ApiOperation({ summary: 'Análisis completo de inteligencia de riesgo (score, forecast, patrones, anomalías, correlaciones)' })
   @ApiResponse({ status: 200, description: 'Risk Intelligence completo' })
   async getIntelligence(@CurrentUser('organizationId') orgId: string) {
-    const data = await this.loadOrgData(orgId);
-    return this.riskIntelligence.comprehensiveAnalysis({
-      organizationId: orgId,
-      categoryScores: data.categoryScores,
-      orgProfile: data.profile,
-      historicalScores: data.historicalScores,
-      incidents: data.allIncidents,
-      events: data.events,
-      metrics: data.metrics,
-      userActivity: data.userActivity,
-    });
+    try {
+      const data = await this.loadOrgData(orgId);
+      return this.riskIntelligence.comprehensiveAnalysis({
+        organizationId: orgId,
+        categoryScores: data.categoryScores,
+        orgProfile: data.profile,
+        historicalScores: data.historicalScores,
+        incidents: data.allIncidents,
+        events: data.events,
+        metrics: data.metrics,
+        userActivity: data.userActivity,
+      });
+    } catch (e: any) {
+      return {
+        error: 'Partial intelligence data available',
+        message: e.message,
+        riskScore: 0, riskLevel: 'LOW', invisibleRiskIndex: 0, organizationalFragility: 0,
+        categories: {}, recommendations: [], correlations: [],
+        benchmark: { vsIndustry: 0, vsPeriod: 0, percentile: 0, trend: 'stable' },
+        confidence: 0,
+        forecast: { riskForecast: [], trend: 'stable', confidence: 0, incidentProbability: 0, earlyWarnings: [], insights: [] },
+        organizationalPatterns: [], crossCorrelations: [], compoundRisks: [], weakSignals: [],
+        anomalyScore: 0, anomalyLevel: 'LOW', scoreAnomalies: [], behavioralAnomalies: [],
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   @Get('risk/score')

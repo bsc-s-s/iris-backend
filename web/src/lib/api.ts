@@ -212,7 +212,7 @@ export const v1 = {
     assessment: (id: string) => v1Request<any>(`/reports/assessment/${id}`, { method: "POST" }),
   },
   gdpr: {
-    dashboard: () => v1Request<any>("/gdpr/dashboard"),
+    dashboard: () => request<any>("/gdpr/dashboard"),
     dpo: {
       get: () => v1Request<any>("/gdpr/dpo"),
       set: (data: any) => v1Request<any>("/gdpr/dpo", { method: "POST", body: data }),
@@ -264,7 +264,7 @@ export const v1 = {
     },
   },
   iso27001: {
-    dashboard: () => v1Request<any>("/iso27001/dashboard"),
+    dashboard: () => request<any>("/iso27001/dashboard"),
     backup: {
       get: () => v1Request<any>("/iso27001/backup"),
       update: (data: any) => v1Request<any>("/iso27001/backup", { method: "PUT", body: data }),
@@ -294,7 +294,7 @@ export const v1 = {
     },
   },
   enterpriseCompliance: {
-    dashboard: () => v1Request<any>("/enterprise-compliance/dashboard"),
+    dashboard: () => request<any>("/enterprise-compliance/dashboard"),
     summary: () => v1Request<any>("/enterprise-compliance/summary"),
     auditTrail: (params?: Record<string, string>) => v1Request<any>("/enterprise-compliance/audit-trail", { params }),
   },
