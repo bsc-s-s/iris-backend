@@ -40,7 +40,7 @@ export default function ExecutiveDashboard() {
       setIntel(i);
       setAnalytics(a);
       setIndexes(idx);
-      setAuditLogs(audit?.logs || []);
+      setAuditLogs(audit?.items || []);
       setRecentAssessments(assessments || []);
       setLoading(false);
     });
