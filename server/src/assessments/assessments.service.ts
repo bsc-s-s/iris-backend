@@ -463,7 +463,6 @@ export class AssessmentsService {
   async generateProtocol(assessmentId: string, protocolType: string, organizationId: string) {
     const assessment = await this.findOne(assessmentId);
     const scores = assessment.scores as any;
-    const orgName = assessment.organizationId;
 
     const templates: Record<string, { name: string; description: string; category: string; steps: string[] }> = {
       plan_autoproteccion: {
