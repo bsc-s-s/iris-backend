@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class Iso27001Service {
+  private readonly logger = new Logger(Iso27001Service.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -174,23 +176,28 @@ export class Iso27001Service {
   // ==================== ISO 27001 Dashboard ====================
 
   async getIsoDashboard(orgId: string) {
-    const [backup, drp, providers, keys, fields, users] = await Promise.all([
-      this.getBackupConfig(orgId),
-      this.getDrp(orgId),
-      this.prisma.cloudProvider.count({ where: { organizationId: orgId } }),
-      this.prisma.encryptionKey.count({ where: { organizationId: orgId, status: 'active' } }),
-      this.prisma.sensitiveField.count({ where: { organizationId: orgId } }),
-      this.prisma.user.count({ where: { organizationId: orgId, isActive: true } }),
-    ]);
+    try {
+      const [backup, drp, providerList, keyList, fieldList, users] = await Promise.all([
+        this.getBackupConfig(orgId),
+        this.getDrp(orgId),
+        this.prisma.cloudProvider.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } }),
+        this.prisma.encryptionKey.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } }),
+        this.prisma.sensitiveField.findMany({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } }),
+        this.prisma.user.count({ where: { organizationId: orgId, isActive: true } }),
+      ]);
 
-    return {
-      backupConfig: backup ? { enabled: backup.enabled, frequency: backup.frequency, retentionDays: backup.retentionDays, encryptionEnabled: backup.encryptionEnabled, lastBackupStatus: backup.lastBackupStatus, lastBackupAt: backup.lastBackupAt } : null,
-      drp: drp ? { name: drp.name, status: drp.status, rto: drp.rto, rpo: drp.rpo, lastTestedAt: drp.lastTestedAt } : null,
-      providers: { total: providers },
-      encryptionKeys: { active: keys },
-      sensitiveFields: { total: fields },
-      activeUsers: users,
-    };
+      return {
+        backup: backup ? { lastBackup: backup.lastBackupAt, frequency: backup.frequency, retentionDays: backup.retentionDays, enabled: backup.enabled, encryptionEnabled: backup.encryptionEnabled, lastBackupStatus: backup.lastBackupStatus, lastBackupAt: backup.lastBackupAt } : {},
+        drp: drp ? { name: drp.name, status: drp.status, rto: drp.rto, rpo: drp.rpo, lastTestedAt: drp.lastTestedAt } : {},
+        providers: providerList || [],
+        encryptionKeys: keyList || [],
+        sensitiveFields: fieldList || [],
+        activeUsers: users,
+      };
+    } catch (e: any) {
+      this.logger.warn(`ISO dashboard error: ${e.message?.slice(0, 200)}`);
+      return { backup: {}, drp: {}, providers: [], encryptionKeys: [], sensitiveFields: [], activeUsers: 0 };
+    }
   }
 
   // ==================== Helpers ====================
