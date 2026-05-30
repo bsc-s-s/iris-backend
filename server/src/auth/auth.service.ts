@@ -121,11 +121,6 @@ export class AuthService {
         await this.audit.log({ userId: user.id, type: 'mfa_attempt', severity: 'warning', ipAddress, deviceId, userAgent, country, metadata: { reason: 'Invalid MFA token' } });
         throw new UnauthorizedException('Invalid MFA code');
       }
-    } else {
-      const requiresMfa = user.role === 'super_admin' || user.role === 'admin';
-      if (requiresMfa && process.env.MFA_REQUIRED !== 'false') {
-        throw new UnauthorizedException('MFA must be configured. Please contact your administrator.');
-      }
     }
 
     // Reset failed login counter on success
