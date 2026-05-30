@@ -24,20 +24,24 @@ export class SecurityService {
   async getDashboard(user: any) {
     this.requireSuperAdmin(user);
 
+    const safeRaw = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch { return fallback; }
+    };
+
     const [eventStats, activeSessions, blockedUsers, totalUsers, recentEvents] = await Promise.all([
-      this.prisma.$queryRawUnsafe< any[] >(
+      safeRaw(() => this.prisma.$queryRawUnsafe<any[]>(
         `SELECT type, severity, COUNT(*) as count FROM "SecurityEvent" WHERE "timestamp" > NOW() - INTERVAL '24 hours' GROUP BY type, severity ORDER BY count DESC`
-      ),
-      this.prisma.$queryRawUnsafe< any[] >(
+      ), []),
+      safeRaw(() => this.prisma.$queryRawUnsafe<any[]>(
         `SELECT COUNT(*) as count FROM "UserSession" WHERE "isActive" = true AND "revokedAt" IS NULL AND "expiresAt" > NOW()`
-      ),
-      this.prisma.$queryRawUnsafe< any[] >(
+      ), [{ count: 0 }]),
+      safeRaw(() => this.prisma.$queryRawUnsafe<any[]>(
         `SELECT COUNT(*) as count FROM "User" WHERE "lockedUntil" > NOW()`
-      ),
+      ), [{ count: 0 }]),
       this.prisma.user.count(),
-      this.prisma.$queryRawUnsafe< any[] >(
+      safeRaw(() => this.prisma.$queryRawUnsafe<any[]>(
         `SELECT se.*, u.email, u.name FROM "SecurityEvent" se LEFT JOIN "User" u ON se."userId" = u.id ORDER BY se."timestamp" DESC LIMIT 20`
-      ),
+      ), []),
     ]);
 
     const eventCounts = (eventStats || []).reduce((acc: any, e: any) => {
@@ -74,7 +78,8 @@ export class SecurityService {
 
     const profiles = await Promise.all(
       users.map(async (u) => {
-        const risk = await this.anomaly.getUserRiskProfile(u.id);
+        let risk: any = {};
+        try { risk = await this.anomaly.getUserRiskProfile(u.id); } catch {}
         return {
           id: u.id,
           email: u.email,
@@ -99,13 +104,16 @@ export class SecurityService {
   async getActiveSessions(user: any) {
     this.requireSuperAdmin(user);
 
-    const sessions = await this.prisma.$queryRawUnsafe< any[] >(
-      `SELECT s.id, s."ipAddress", s."userAgent", s."deviceInfo", s."lastActivityAt", s."createdAt", s."expiresAt", u.email, u.name, u.role
-       FROM "UserSession" s JOIN "User" u ON s."userId" = u.id
-       WHERE s."isActive" = true AND s."revokedAt" IS NULL AND s."expiresAt" > NOW()
-       ORDER BY s."lastActivityAt" DESC
-       LIMIT 100`
-    );
+    let sessions: any[] = [];
+    try {
+      sessions = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT s.id, s."ipAddress", s."userAgent", s."deviceInfo", s."lastActivityAt", s."createdAt", s."expiresAt", u.email, u.name, u.role
+         FROM "UserSession" s JOIN "User" u ON s."userId" = u.id
+         WHERE s."isActive" = true AND s."revokedAt" IS NULL AND s."expiresAt" > NOW()
+         ORDER BY s."lastActivityAt" DESC
+         LIMIT 100`
+      );
+    } catch {}
 
     return { sessions: sessions || [], total: sessions?.length || 0 };
   }
