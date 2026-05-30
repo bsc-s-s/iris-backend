@@ -29,6 +29,16 @@ import {
 import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
+  // IRIS Organizational Intelligence
+  { href: "/iris", label: "IRIS Intelligence", icon: Brain, iris: true },
+  { href: "/iris/scan", label: "IRIS Scan", icon: ScanEye, iris: true },
+  { href: "/iris/alerts", label: "IRIS Alerts", icon: AlertTriangle, iris: true },
+  { href: "/iris/signals", label: "Risk Signals", icon: TrendingUp, iris: true },
+  { href: "/iris/monitor", label: "IRIS Monitor", icon: Radio, iris: true },
+  { href: "/iris/predict", label: "IRIS Predict", icon: TrendingUp, iris: true },
+  { href: "/iris/benchmark", label: "Benchmark", icon: BarChart3, iris: true },
+  { href: "/iris/reports", label: "Reports", icon: FileText, iris: true },
+  // Legacy
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/assessments", label: "Evaluaciones", icon: ClipboardCheck },
   { href: "/risk-forecast", label: "Pronóstico", icon: TrendingUp },
@@ -72,7 +82,23 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-        {NAV_ITEMS.map((item) => {
+        <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-indigo-400">IRIS&trade; Platform</div>
+        {NAV_ITEMS.filter(i => i.iris).map((item) => {
+          const isActive = pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`sidebar-link mb-0.5 ${isActive ? "active iris-active" : "iris-link"}`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+        <div className="my-3 border-t border-gray-800" />
+        <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Legacy</div>
+        {NAV_ITEMS.filter(i => !i.iris).map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link

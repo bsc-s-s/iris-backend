@@ -33,6 +33,7 @@ import { DocumentAnalysisModule } from './modules/document-analysis/document-ana
 import { ScoringModule } from './modules/scoring/scoring.module';
 import { RiskIntelligenceModule } from './modules/risk-intelligence/risk-intelligence.module';
 import { InvisibleRiskEngineModule } from './modules/invisible-risk-engine/invisible-risk-engine.module';
+import { IrisModule } from './iris/iris.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { InvisibleRiskEngineModule } from './modules/invisible-risk-engine/invis
     ScoringModule,
     RiskIntelligenceModule,
     InvisibleRiskEngineModule,
+    IrisModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

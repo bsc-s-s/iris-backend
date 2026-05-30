@@ -62,6 +62,21 @@ model Organization {
   sensitiveFields     SensitiveField[]
   dataRetentionPolicies DataRetentionPolicy[]
   securityEvents      SecurityEvent[]
+
+  // IRIS Organizational Intelligence
+  irisScans           IrisScan[]
+  irisScores          IrisScore[]
+  irisOrgScores       IrisOrgScore[]
+  riskSignals         RiskSignal[]
+  alerts              Alert[]
+  monitorCycles       MonitorCycle[]
+  benchmarkData       BenchmarkData[]
+  predictions         Prediction[]
+  documentInsights    DocumentInsight[]
+  reports             Report[]
+  invitations         Invitation[]
+  activities          Activity[]
+  license             License?
 }
 
 model User {
@@ -112,6 +127,14 @@ model User {
   dpiaReviewed          DataProcessingRecord[] @relation("DataProcessingRecordReviewer")
   dataExportRequests    DataExport[] @relation("DataExportRequester")
   securityEvents        SecurityEvent[]
+
+  // IRIS relations
+  createdIrisScans      IrisScan[]          @relation("IrisScanCreator")
+  acknowledgedSignals   RiskSignal[]        @relation("RiskSignalAcknowledger")
+  uploadedDocuments     DocumentInsight[]    @relation("DocumentUploader")
+  createdReports        Report[]            @relation("ReportCreator")
+  sentInvitations       Invitation[]        @relation("InvitationSender")
+  activityLog           Activity[]          @relation("ActivityUser")
 
   @@index([organizationId])
   @@index([email])
@@ -643,6 +666,307 @@ model DataSubjectRequest {
   @@index([organizationId])
   @@index([userId])
   @@index([type])
+  @@index([status])
+}
+
+// ================ IRIS™ ORGANIZATIONAL INTELLIGENCE PLATFORM ================
+
+/// IRIS Scan — Conversational adaptive assessment session
+model IrisScan {
+  id             String   @id @default(cuid())
+  title          String
+  status         String   @default("in_progress") // in_progress, completed, cancelled
+  phase          String   @default("blind_spot") // blind_spot, protocol_erosion, overconfidence, key_person, cultural_degradation, governance_weakness, operational_fragility, knowledge_concentration, strategic_misalignment, resilience_capacity
+  currentQuestion Int     @default(0)
+  totalQuestions  Int     @default(100)
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  metadata       Json?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdById    String?
+  createdBy      User?    @relation("IrisScanCreator", fields: [createdById], references: [id])
+  responses      IrisResponse[]
+  scores         IrisScore[]
+  signals        RiskSignal[]
+  monitorCycles  MonitorCycle[]
+  @@index([organizationId])
+  @@index([status])
+}
+
+/// IRIS Response — Individual answer within a scan
+model IrisResponse {
+  id         String   @id @default(cuid())
+  questionId String
+  question   IrisQuestion @relation(fields: [questionId], references: [id])
+  response   Json     // { value: 1-5 | text: string, latency: number, hesitation: number, corrections: number }
+  latency    Int?     // ms to respond
+  hesitation Int?     // number of pauses
+  corrections Int?    // times answer was changed
+  createdAt  DateTime @default(now())
+  scanId     String
+  scan       IrisScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  @@index([scanId])
+}
+
+/// IRIS Question — Dynamic, context-aware questions
+model IrisQuestion {
+  id          String   @id @default(cuid())
+  text        String
+  category    String   // blind_spot, protocol_erosion, overconfidence, key_person, cultural_degradation, governance_weakness, operational_fragility, knowledge_concentration, strategic_misalignment, resilience_capacity
+  subCategory String?
+  weight      Float    @default(1.0)
+  depth       Int      @default(1) // 1=surface, 2=probing, 3=deep
+  adaptive    Boolean  @default(true) // adapts based on previous responses
+  condition   Json?    // { minScore?: number, maxScore?: number, dependsOn?: string }
+  responses   IrisResponse[]
+  @@index([category])
+}
+
+/// IRIS Score — Multi-dimensional scoring snapshot
+model IrisScore {
+  id         String   @id @default(cuid())
+  dimension  String   // anticipation, resilience, exposure, invisibility, dependency, culture, governance, fragility, operational_health, strategic_alignment
+  value      Float
+  weight     Float    @default(1.0)
+  trend      String   @default("stable") // improving, stable, declining
+  delta      Float?   // change from previous score
+  calculatedAt DateTime @default(now())
+  scanId     String?
+  scan       IrisScan? @relation(fields: [scanId], references: [id])
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId, dimension])
+  @@index([scanId])
+}
+
+/// IRIS Organizational Intelligence Score™ — Main composite score
+model IrisOrgScore {
+  id              String   @id @default(cuid())
+  overallScore    Float    // 0-100
+  classification  String   // critical, high_risk, moderate_risk, stable, resilient
+  anticipation    Float
+  resilience      Float
+  exposure        Float
+  invisibility    Float
+  dependency      Float
+  culture         Float
+  governance      Float
+  fragility       Float
+  operationalHealth Float
+  strategicAlignment Float
+  confidence      Float    @default(0.85)
+  calculatedAt    DateTime @default(now())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@index([calculatedAt])
+  @@index([overallScore])
+}
+
+/// RiskSignal — Detected organizational risk signals
+model RiskSignal {
+  id              String   @id @default(cuid())
+  type            String   // pattern, behavioral, organizational
+  category        String   // inconsistency, contradiction, anomaly, weak_signal, deterioration
+  title           String
+  description     String
+  severity        String   @default("medium") // critical, high, medium, low, info
+  confidence      Float    @default(0.7)
+  source          String   // scan, monitor, ai_engine, document, benchmark
+  metadata        Json?
+  detectedAt      DateTime @default(now())
+  acknowledgedAt  DateTime?
+  acknowledgedById String?
+  acknowledgedBy  User?    @relation("RiskSignalAcknowledger", fields: [acknowledgedById], references: [id])
+  scanId          String?
+  scan            IrisScan? @relation(fields: [scanId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  alerts          Alert[]
+  @@index([organizationId])
+  @@index([type])
+  @@index([severity])
+  @@index([scanId])
+}
+
+/// Alert — Intelligent, context-aware alert
+model Alert {
+  id              String    @id @default(cuid())
+  title           String
+  message         String
+  severity        String    @default("medium") // critical, high, medium, low
+  category        String    // resilience, dependency, protocol, cultural, governance
+  source          String    // monitor, scan, predict, benchmark
+  metric          String?   // the score field that triggered the alert
+  previousValue   Float?
+  currentValue    Float?
+  threshold       Float?
+  read            Boolean   @default(false)
+  dismissedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  signalId        String?
+  signal          RiskSignal? @relation(fields: [signalId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@index([severity])
+  @@index([createdAt])
+  @@index([read])
+}
+
+/// MonitorCycle — Continuous monitoring schedule
+model MonitorCycle {
+  id              String    @id @default(cuid())
+  frequency       String    // weekly, monthly, quarterly
+  status          String    @default("pending") // pending, running, completed, failed
+  startedAt       DateTime?
+  completedAt     DateTime?
+  scores          Json?     // snapshot of all scores at this cycle
+  signalsCount    Int       @default(0)
+  alertsGenerated Int       @default(0)
+  metadata        Json?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  scanId          String?
+  scan            IrisScan? @relation(fields: [scanId], references: [id])
+  @@index([organizationId])
+  @@index([frequency])
+  @@index([status])
+}
+
+/// BenchmarkData — Cross-organizational benchmark records
+model BenchmarkData {
+  id              String   @id @default(cuid())
+  overallScore    Float
+  industry        String?
+  companySize     String?  // small, medium, large, enterprise
+  employeeCount   Int?
+  revenue        String?
+  region          String?
+  scores          Json     // all dimension scores
+  calculatedAt    DateTime @default(now())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@index([industry])
+  @@index([overallScore])
+}
+
+/// Prediction — IRIS predictive model output
+model Prediction {
+  id              String   @id @default(cuid())
+  model           String   // operational_crisis, talent_loss, knowledge_collapse, governance_failure, cultural_failure, burnout
+  probability     Float    // 0-1
+  impact          String   // critical, high, medium, low
+  timeHorizon     String   // 30d, 60d, 90d, 6m, 12m
+  causalFactors   Json?
+  recommendations Json?
+  score           Float?   // prediction confidence score
+  calculatedAt    DateTime @default(now())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId])
+  @@index([model])
+  @@index([probability])
+}
+
+/// DocumentInsight — AI extraction from uploaded documents
+model DocumentInsight {
+  id              String   @id @default(cuid())
+  fileName        String
+  fileType        String   // pdf, docx, xlsx
+  fileSize        Int?
+  content         String?  // extracted text
+  summary         String?
+  riskSignals     Json?    // extracted risk signals
+  keyFindings     Json?
+  recommendations Json?
+  processedAt     DateTime @default(now())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  uploadedById    String?
+  uploadedBy      User?    @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  @@index([organizationId])
+}
+
+/// Report — Generated executive report
+model Report {
+  id              String   @id @default(cuid())
+  title           String
+  type            String   // executive, board, compliance, risk_assessment
+  format          String   // json, pdf, docx, pptx
+  status          String   @default("draft") // draft, generating, completed, failed
+  content         Json?    // full report data
+  sections        Json?    // array of section configs
+  generatedAt     DateTime @default(now())
+  completedAt     DateTime?
+  fileUrl         String?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  createdById     String?
+  createdBy       User?    @relation("ReportCreator", fields: [createdById], references: [id])
+  @@index([organizationId])
+  @@index([type])
+}
+
+/// Invitation — Invite-only access control
+model Invitation {
+  id              String    @id @default(cuid())
+  email           String
+  token           String    @unique
+  role            String    @default("member")
+  status          String    @default("pending") // pending, accepted, expired, revoked
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  invitedById     String?
+  invitedBy       User?     @relation("InvitationSender", fields: [invitedById], references: [id])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  @@index([email])
+  @@index([token])
+  @@index([status])
+}
+
+/// Activity — Organizational timeline event
+model Activity {
+  id              String   @id @default(cuid())
+  type            String   // scan_completed, alert_triggered, score_changed, report_generated, action_taken, risk_detected, benchmark_updated, prediction_made
+  title           String
+  description     String?
+  severity        String   @default("info") // critical, high, medium, low, info
+  metadata        Json?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  userId          String?
+  user            User?    @relation("ActivityUser", fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+/// License — SaaS subscription/license management
+model License {
+  id              String   @id @default(cuid())
+  plan            String   // starter, professional, enterprise, enterprise_plus
+  status          String   @default("active") // active, suspended, cancelled, expired
+  maxUsers        Int      @default(10)
+  maxAssessments  Int      @default(50)
+  maxScans        Int      @default(10)
+  benchmarking    Boolean  @default(false)
+  monitoring      Boolean  @default(false)
+  aiEnabled       Boolean  @default(true)
+  apiAccess       Boolean  @default(false)
+  customBranding  Boolean  @default(false)
+  supportLevel    String   @default("standard") // standard, priority, dedicated
+  startsAt        DateTime @default(now())
+  expiresAt       DateTime?
+  cancelledAt     DateTime?
+  organizationId  String   @unique
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  @@index([plan])
   @@index([status])
 }
 

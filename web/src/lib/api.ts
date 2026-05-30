@@ -300,6 +300,90 @@ export const v1 = {
   },
 };
 
+export const iris = {
+  intelligence: () => request<any>("/iris/intelligence"),
+  dashboard: () => request<any>("/iris/dashboard"),
+  timeline: (days?: number) => request<any>("/iris/timeline", { params: days ? { days: String(days) } : {} }),
+  scan: {
+    start: (data?: { title?: string; categories?: string[] }) => request<any>("/iris/scan/start", { method: "POST", body: data || {} }),
+    get: (id: string) => request<any>(`/iris/scan/${id}`),
+    respond: (id: string, questionId: string, response: any) =>
+      request<any>(`/iris/scan/${id}/respond`, { method: "POST", body: { questionId, response } }),
+    complete: (id: string) => request<any>(`/iris/scan/${id}/complete`, { method: "POST" }),
+    signals: (id: string) => request<any>(`/iris/scan/${id}/signals`),
+  },
+  questions: {
+    list: (category?: string, depth?: number) => request<any>("/iris/questions", { params: { ...(category ? { category } : {}), ...(depth ? { depth: String(depth) } : {}) } }),
+    next: (scanId: string) => request<any>(`/iris/questions/next/${scanId}`),
+  },
+  scoring: {
+    calculate: (scanId?: string) => request<any>("/iris/scoring/calculate", { method: "POST", body: scanId ? { scanId } : {} }),
+    history: (days?: number) => request<any>("/iris/scoring/history", { params: days ? { days: String(days) } : {} }),
+    latest: () => request<any>("/iris/scoring/latest"),
+    dimensions: () => request<any>("/iris/scoring/dimensions"),
+  },
+  signals: {
+    list: (severity?: string, type?: string) => request<any>("/iris/signals", { params: { ...(severity ? { severity } : {}), ...(type ? { type } : {}) } }),
+    acknowledge: (id: string) => request<any>(`/iris/signals/${id}/acknowledge`, { method: "POST" }),
+  },
+  alerts: {
+    list: () => request<any>("/iris/alerts"),
+    dismiss: (id: string) => request<any>(`/iris/alerts/${id}/dismiss`, { method: "POST" }),
+  },
+  monitor: {
+    run: (frequency?: string) => request<any>("/iris/monitor/run", { method: "POST", body: { frequency } }),
+    cycles: () => request<any>("/iris/monitor/cycles"),
+    status: () => request<any>("/iris/monitor/status"),
+  },
+  predict: {
+    run: () => request<any>("/iris/predict/run", { method: "POST" }),
+    results: (model?: string) => request<any>("/iris/predict/results", { params: model ? { model } : {} }),
+  },
+  benchmark: {
+    compare: (filters?: { industry?: string; size?: string; region?: string }) =>
+      request<any>("/iris/benchmark/compare", { method: "POST", body: filters || {} }),
+    position: () => request<any>("/iris/benchmark/position"),
+  },
+  reports: {
+    generate: (type: string, title?: string) => request<any>("/iris/reports/generate", { method: "POST", body: { type, title } }),
+    list: () => request<any>("/iris/reports"),
+    get: (id: string) => request<any>(`/iris/reports/${id}`),
+  },
+  documents: {
+    analyze: (data: { fileName: string; content: string; fileType: string }) =>
+      request<any>("/iris/documents/analyze", { method: "POST", body: data }),
+  },
+};
+
+export const admin = {
+  invitations: {
+    create: (email: string, role?: string, organizationId?: string) =>
+      request<any>("/admin/invitations", { method: "POST", body: { email, role, organizationId } }),
+    list: () => request<any[]>("/admin/invitations"),
+    revoke: (id: string) => request<any>(`/admin/invitations/${id}/revoke`, { method: "POST" }),
+  },
+  licenses: {
+    assign: (organizationId: string, plan: string) =>
+      request<any>("/admin/licenses", { method: "POST", body: { organizationId, plan } }),
+    list: () => request<any[]>("/admin/licenses"),
+  },
+  organizations: {
+    list: () => request<any[]>("/admin/organizations"),
+    get: (id: string) => request<any>(`/admin/organizations/${id}`),
+  },
+  users: {
+    list: () => request<any[]>("/admin/users"),
+    suspend: (id: string) => request<any>(`/admin/users/${id}/suspend`, { method: "POST" }),
+  },
+  system: {
+    health: () => request<any>("/admin/system"),
+    stats: () => request<any>("/admin/stats"),
+  },
+  seed: {
+    questions: () => request<any>("/admin/seed/questions", { method: "POST" }),
+  },
+};
+
 export const api = {
   auth: {
     login: (data: { email: string; password: string }, headers?: Record<string, string>) =>
