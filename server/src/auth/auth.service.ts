@@ -195,7 +195,7 @@ export class AuthService {
 
     await this.zt.resetFailedLogins(user.id);
 
-    const mfaRequired = user.mfaEnabled || (['super_admin', 'admin'].includes(user.role) && process.env.MFA_REQUIRED !== 'false');
+    const mfaRequired = user.mfaEnabled;
 
     return { mfaRequired, userId: user.id, email: user.email };
   }
