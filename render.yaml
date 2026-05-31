@@ -7,7 +7,7 @@ services:
     plan: free
     branch: main
     buildCommand: cd server && npm install && npx prisma generate && npx nest build
-    startCommand: cd server && export DATABASE_URL="${DATABASE_URL:-postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require}" && npx prisma db push --accept-data-loss && node dist/main.js
+    startCommand: cd server && npx prisma db push --accept-data-loss && node dist/main.js
     envVars:
       - key: NODE_VERSION
         value: 22
