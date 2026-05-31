@@ -48,10 +48,6 @@ async function handleRefresh(): Promise<void> {
     pendingRequests.forEach((p) => p.resolve());
   } catch (err) {
     pendingRequests.forEach((p) => p.reject(err));
-    pendingRequests = [];
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
     throw err;
   } finally {
     pendingRequests = [];
@@ -83,7 +79,10 @@ async function request<T>(path: string, options: RequestOptions & { headers?: Re
       await handleRefresh();
       res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
     } catch {
-      throw new Error("Sesión expirada. Redirigiendo al login...");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+      throw new Error("Sesión expirada");
     }
   }
 
@@ -107,7 +106,10 @@ async function v1Request<T>(path: string, options: RequestOptions = {}): Promise
       await handleRefresh();
       res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
     } catch {
-      throw new Error("Sesión expirada. Redirigiendo al login...");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+      throw new Error("Sesión expirada");
     }
   }
 
