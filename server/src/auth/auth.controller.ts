@@ -21,9 +21,9 @@ function cookieOpts(req: any, maxAge: number) {
 }
 
 function setAuthCookies(res: Response, req: any, tokens: { accessToken: string; refreshToken: string }) {
-  res.cookie('access_token', tokens.accessToken, cookieOpts(req, 15 * 60));
-  res.cookie('refresh_token', tokens.refreshToken, { ...cookieOpts(req, 7 * 24 * 60 * 60), path: '/api/auth' });
-  res.cookie('csrf_token', crypto.randomUUID(), { ...cookieOpts(req, 7 * 24 * 60 * 60), httpOnly: false });
+  res.cookie('access_token', tokens.accessToken, cookieOpts(req, 15 * 60 * 1000));
+  res.cookie('refresh_token', tokens.refreshToken, { ...cookieOpts(req, 7 * 24 * 60 * 60 * 1000), path: '/api/auth' });
+  res.cookie('csrf_token', crypto.randomUUID(), { ...cookieOpts(req, 7 * 24 * 60 * 60 * 1000), httpOnly: false });
 }
 
 function clearAuthCookies(res: Response, req: any) {
