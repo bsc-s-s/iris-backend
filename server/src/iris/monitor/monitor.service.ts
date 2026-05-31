@@ -28,31 +28,35 @@ export class MonitorService {
       const activeAlerts: any[] = [];
       const thresholdAlerts = this.generateThresholdAlerts(scores);
 
-      for (const alert of thresholdAlerts) {
-        const created = await this.prisma.alert.create({
-          data: { ...alert, organizationId: orgId },
+      if (thresholdAlerts.length > 0) {
+        const created = await this.prisma.alert.createMany({
+          data: thresholdAlerts.map(a => ({ ...a, organizationId: orgId })),
         });
-        activeAlerts.push(created);
+        activeAlerts.push(...Array.from({ length: created.count }, (_, i) => ({ ...thresholdAlerts[i], organizationId: orgId })));
       }
 
-      const criticalSignals = signals.filter(s => s.severity === 'critical' || s.severity === 'high');
-      for (const signal of criticalSignals.slice(0, 5)) {
-        const existing = await this.prisma.alert.findFirst({
-          where: { signalId: signal.id, organizationId: orgId },
-        });
-        if (!existing) {
-          const alert = await this.prisma.alert.create({
-            data: {
-              title: `Risk signal: ${signal.title}`,
-              message: signal.description,
-              severity: signal.severity as any,
-              category: signal.category,
-              source: 'monitor',
-              signalId: signal.id,
-              organizationId: orgId,
-            },
-          });
-          activeAlerts.push(alert);
+      const criticalSignals = signals.filter(s => s.severity === 'critical' || s.severity === 'high').slice(0, 5);
+      if (criticalSignals.length > 0) {
+        const existingAlertIds = new Set(
+          (await this.prisma.alert.findMany({
+            where: { signalId: { in: criticalSignals.map(s => s.id) }, organizationId: orgId },
+            select: { signalId: true },
+          })).map(a => a.signalId),
+        );
+        const newSignalAlerts = criticalSignals
+          .filter(s => !existingAlertIds.has(s.id))
+          .map(signal => ({
+            title: `Risk signal: ${signal.title}`,
+            message: signal.description,
+            severity: signal.severity as any,
+            category: signal.category,
+            source: 'monitor',
+            signalId: signal.id,
+            organizationId: orgId,
+          }));
+        if (newSignalAlerts.length > 0) {
+          await this.prisma.alert.createMany({ data: newSignalAlerts });
+          activeAlerts.push(...newSignalAlerts);
         }
       }
 

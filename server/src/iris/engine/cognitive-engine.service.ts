@@ -14,9 +14,11 @@ export class CognitiveEngine {
   ) {}
 
   async analyzeScanResponses(responses: any[]) {
-    const patternSignals = await this.patternDetector.detectPatterns(responses);
-    const behavioralSignals = await this.behavioralAnalyzer.analyze(responses);
-    const orgSignals = await this.organizationalAnalyzer.analyze(responses);
+    const [patternSignals, behavioralSignals, orgSignals] = await Promise.all([
+      this.patternDetector.detectPatterns(responses),
+      this.behavioralAnalyzer.analyze(responses),
+      this.organizationalAnalyzer.analyze(responses),
+    ]);
 
     const allSignals = [...patternSignals, ...behavioralSignals, ...orgSignals];
     const merged = this.mergeDuplicateSignals(allSignals);

@@ -6,6 +6,7 @@ import { PrismaService } from './prisma/prisma.service';
 import * as path from 'path';
 import * as express from 'express';
 import * as crypto from 'crypto';
+import cookieParser from 'cookie-parser';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
@@ -15,6 +16,21 @@ async function bootstrap() {
 
   // Trust proxy for Render (HTTPS termination)
   server.set('trust proxy', 1);
+
+  // Cookie parser for HttpOnly auth tokens
+  app.use(cookieParser());
+
+  // CSRF protection — skip GET/HEAD/OPTIONS and auth endpoints
+  server.use((req: any, res: any, next: any) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    if (req.path?.startsWith('/api/auth/')) return next();
+    const cookieToken = req.cookies?.csrf_token;
+    const headerToken = req.headers['x-csrf-token'];
+    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+      return res.status(403).json({ message: 'CSRF token inválido o faltante', ok: false });
+    }
+    next();
+  });
 
   // Sync database schema - add missing columns if they don't exist
   try {
@@ -64,9 +80,11 @@ async function bootstrap() {
       `ALTER TABLE "SecurityProtocol" ADD COLUMN IF NOT EXISTS "template" TEXT`,
       `ALTER TABLE "SecurityProtocol" ADD COLUMN IF NOT EXISTS "assessmentId" TEXT`,
     ];
-    for (const sql of migrations) {
-      await prisma.$executeRawUnsafe(sql);
-    }
+    await prisma.$transaction(async (tx) => {
+      for (const sql of migrations) {
+        await tx.$executeRawUnsafe(sql);
+      }
+    });
     logger.log('Schema sync completed');
   } catch (e: any) {
     logger.warn(`Schema sync error (non-blocking): ${e.message?.substring(0, 200)}`);
@@ -147,9 +165,11 @@ async function bootstrap() {
       `CREATE INDEX IF NOT EXISTS idx_activity_type ON "Activity" (type)`,
       `CREATE INDEX IF NOT EXISTS idx_activity_time ON "Activity" ("createdAt")`,
     ];
-    for (const sql of tables) {
-      await prisma.$executeRawUnsafe(sql);
-    }
+    await prisma.$transaction(async (tx) => {
+      for (const sql of tables) {
+        await tx.$executeRawUnsafe(sql);
+      }
+    });
     logger.log('New tables created');
   } catch (e: any) {
     logger.warn(`Table creation error (non-blocking): ${e.message?.substring(0, 200)}`);
@@ -216,7 +236,7 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "blob:"],
           connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000'].filter(Boolean),
@@ -241,7 +261,7 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: process.env.CORS_ORIGIN?.split(',') || process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-tenant-id', 'x-csrf-token', 'X-Webhook-Signature', 'x-device-id', 'x-mfa-token', 'x-country'],
@@ -314,6 +334,7 @@ async function bootstrap() {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
         body: JSON.stringify({ model, messages: req.body.messages || [], max_tokens: req.body.max_tokens || 2000, temperature: 0.7 }),
+        signal: AbortSignal.timeout(30000),
       });
       const groq = await resp.json();
       if (!resp.ok) return res.status(resp.status).json({ error: { message: groq.error?.message || 'Groq API error' } });
@@ -337,6 +358,7 @@ async function bootstrap() {
           'Prefer': req.headers['x-prefer'] || 'return=representation',
         },
         body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+        signal: AbortSignal.timeout(15000),
       });
       const text = await resp.text();
       const safeHeaders: Record<string, string> = {};
@@ -370,6 +392,7 @@ async function bootstrap() {
         method: req.method,
         headers,
         body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body || {}) : undefined,
+        signal: AbortSignal.timeout(10000),
       });
       const text = await resp.text();
       const safe: Record<string, string> = {};

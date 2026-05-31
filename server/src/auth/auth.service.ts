@@ -135,31 +135,37 @@ export class AuthService {
     // Create new session
     const sessionId = await this.zt.createSession(user.id, ipAddress, userAgent, deviceId);
 
-    // Register device
-    if (deviceId) {
-      await this.zt.registerDevice(user.id, deviceId, userAgent, ipAddress);
+    try {
+      // Register device
+      if (deviceId) {
+        await this.zt.registerDevice(user.id, deviceId, userAgent, ipAddress);
+      }
+
+      // Update last login
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date(), lastDeviceId: deviceId || undefined },
+      });
+
+      // Log successful login to immutable audit
+      await this.audit.log({ userId: user.id, type: 'login', severity: 'info', ipAddress, deviceId, userAgent, country, metadata: { sessionId } });
+
+      // Generate tokens with session ID in payload
+      const tokens = await this.generateTokens(user.id, user.email, user.role, user.organizationId, sessionId);
+
+      this.logger.log(`Login successful: ${user.email} from ${ipAddress} [${country}]`);
+
+      return {
+        user: { id: user.id, email: user.email, name: user.name, role: user.role, title: user.title, mfaEnabled: user.mfaEnabled, securityLevel: user.securityLevel },
+        organization: { id: user.organization.id, name: user.organization.name, slug: user.organization.slug, plan: user.organization.plan },
+        sessionId,
+        ...tokens,
+      };
+    } catch (e: any) {
+      await this.zt.revokeSession(sessionId).catch(() => {});
+      this.logger.error(`Login rollback after session ${sessionId}: ${e.message}`);
+      throw e;
     }
-
-    // Update last login
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date(), lastDeviceId: deviceId || undefined },
-    });
-
-    // Log successful login to immutable audit
-    await this.audit.log({ userId: user.id, type: 'login', severity: 'info', ipAddress, deviceId, userAgent, country, metadata: { sessionId } });
-
-    // Generate tokens with session ID in payload
-    const tokens = await this.generateTokens(user.id, user.email, user.role, user.organizationId, sessionId);
-
-    this.logger.log(`Login successful: ${user.email} from ${ipAddress} [${country}]`);
-
-    return {
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, title: user.title, mfaEnabled: user.mfaEnabled, securityLevel: user.securityLevel },
-      organization: { id: user.organization.id, name: user.organization.name, slug: user.organization.slug, plan: user.organization.plan },
-      sessionId,
-      ...tokens,
-    };
   }
 
   async loginStep1(dto: LoginDto, extras?: {

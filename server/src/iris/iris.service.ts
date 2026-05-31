@@ -132,9 +132,9 @@ export class IrisService {
         },
       });
 
-      for (const signal of signals.slice(0, 10)) {
-        await this.prisma.riskSignal.create({
-          data: {
+      if (signals.length > 0) {
+        await this.prisma.riskSignal.createMany({
+          data: signals.slice(0, 10).map(signal => ({
             type: 'pattern',
             category: signal.category || 'anomaly',
             title: signal.title,
@@ -144,7 +144,7 @@ export class IrisService {
             source: 'document',
             metadata: { documentId: insight.id, fileName: data.fileName },
             organizationId: orgId,
-          },
+          })),
         });
       }
 

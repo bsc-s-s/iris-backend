@@ -12,43 +12,40 @@ function getDeviceHeader(): Record<string, string> {
   return id ? { "x-device-id": id } : {};
 }
 
-let isRefreshing = false;
-let pendingRequests: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
-
-async function refreshAccessToken(): Promise<string> {
-  const refreshToken = localStorage.getItem("iris_refresh");
-  if (!refreshToken) throw new Error("No refresh token");
-
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
-  });
-
-  if (!res.ok) {
-    localStorage.removeItem("iris_token");
-    localStorage.removeItem("iris_refresh");
-    throw new Error("Refresh failed");
-  }
-
-  const data = await res.json();
-  localStorage.setItem("iris_token", data.accessToken);
-  if (data.refreshToken) localStorage.setItem("iris_refresh", data.refreshToken);
-  return data.accessToken;
+function getCsrfHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const csrf = getCsrfToken();
+  return csrf ? { "X-CSRF-Token": csrf } : {};
 }
 
-async function handleRefresh(): Promise<string> {
+export function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? match[1] : null;
+}
+
+let isRefreshing = false;
+let pendingRequests: Array<{ resolve: () => void; reject: (err: any) => void }> = [];
+
+async function doRefresh(): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getCsrfHeader() },
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Refresh failed");
+}
+
+async function handleRefresh(): Promise<void> {
   if (isRefreshing) {
     return new Promise((resolve, reject) => {
       pendingRequests.push({ resolve, reject });
     });
   }
-
   isRefreshing = true;
   try {
-    const token = await refreshAccessToken();
-    pendingRequests.forEach((p) => p.resolve(token));
-    return token;
+    await doRefresh();
+    pendingRequests.forEach((p) => p.resolve());
   } catch (err) {
     pendingRequests.forEach((p) => p.reject(err));
     pendingRequests = [];
@@ -72,23 +69,19 @@ function buildUrl(base: string, path: string, params?: Record<string, string>): 
 }
 
 function buildHeaders(extraHeaders?: Record<string, string>): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", ...getDeviceHeader(), ...extraHeaders };
-  const token = typeof window !== "undefined" ? localStorage.getItem("iris_token") : null;
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  return headers;
+  return { "Content-Type": "application/json", ...getDeviceHeader(), ...getCsrfHeader(), ...extraHeaders };
 }
 
 async function request<T>(path: string, options: RequestOptions & { headers?: Record<string, string> } = {}): Promise<T> {
   const { method = "GET", body, params, headers: extraHeaders } = options;
   const url = buildUrl(API_BASE, path, params);
-  let headers = buildHeaders(extraHeaders);
-  let res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const headers = buildHeaders(extraHeaders);
+  let res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
 
   if (res.status === 401) {
     try {
-      const newToken = await handleRefresh();
-      headers = { ...buildHeaders(extraHeaders), Authorization: `Bearer ${newToken}` };
-      res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      await handleRefresh();
+      res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
     } catch {
       throw new Error("Sesión expirada. Redirigiendo al login...");
     }
@@ -106,14 +99,13 @@ const V1_BASE = "/api/v1";
 async function v1Request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, params } = options;
   const url = buildUrl(V1_BASE, path, params);
-  let headers = buildHeaders();
-  let res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const headers = buildHeaders();
+  let res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
 
   if (res.status === 401) {
     try {
-      const newToken = await handleRefresh();
-      headers = { ...buildHeaders(), Authorization: `Bearer ${newToken}` };
-      res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      await handleRefresh();
+      res = await fetch(url, { method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined });
     } catch {
       throw new Error("Sesión expirada. Redirigiendo al login...");
     }
@@ -394,8 +386,10 @@ export const api = {
       request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/login/step2", { method: "POST", body: data, headers }),
     register: (data: { email: string; password: string; name: string; organizationName: string }) =>
       request<{ user: any; organization: any; accessToken: string; refreshToken: string }>("/auth/register", { method: "POST", body: data }),
-    refresh: (refreshToken: string) =>
-      request<{ accessToken: string; refreshToken: string }>("/auth/refresh", { method: "POST", body: { refreshToken } }),
+    refresh: (refreshToken?: string) =>
+      request<{ accessToken: string; refreshToken: string }>("/auth/refresh", { method: "POST", body: refreshToken ? { refreshToken } : {} }),
+    ssoSession: (accessToken: string, refreshToken: string) =>
+      request<{ ok: boolean }>("/auth/sso/session", { method: "POST", body: { accessToken, refreshToken } }),
     me: () => request<{ user: any; organization: any }>("/auth/me", { method: "POST" }),
     logout: () => request<{ ok: boolean }>("/auth/logout", { method: "POST" }),
   },

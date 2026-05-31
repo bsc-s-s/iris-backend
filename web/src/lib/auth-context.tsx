@@ -17,7 +17,6 @@ type AuthContextType = {
   register: (data: { email: string; password: string; name: string; organizationName: string }) => Promise<void>;
   logout: () => Promise<void>;
   ssoLogin: (provider: string) => Promise<void>;
-  setSsoSession: (accessToken: string, refreshToken: string, userData: any, orgData: any) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,20 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
       setOrganization(data.organization);
     } catch {
-      localStorage.removeItem("iris_token");
-      localStorage.removeItem("iris_refresh");
       setUser(null);
       setOrganization(null);
     }
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("iris_token");
-    if (token) {
-      fetchUser().finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    fetchUser().finally(() => setLoading(false));
   }, [fetchUser]);
 
   const login = async (email: string, password: string, mfaToken?: string) => {
@@ -55,8 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (mfaToken) headers["x-mfa-token"] = mfaToken;
 
     const data = await api.auth.login({ email, password }, headers);
-    localStorage.setItem("iris_token", data.accessToken);
-    localStorage.setItem("iris_refresh", data.refreshToken);
     setUser(data.user);
     setOrganization(data.organization);
   };
@@ -69,24 +59,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginStep2 = async (userId: string, mfaToken: string) => {
     const deviceId = getDeviceId();
     const data = await api.auth.loginStep2({ userId, mfaToken }, { "x-device-id": deviceId });
-    localStorage.setItem("iris_token", data.accessToken);
-    localStorage.setItem("iris_refresh", data.refreshToken);
     setUser(data.user);
     setOrganization(data.organization);
   };
 
   const register = async (regData: { email: string; password: string; name: string; organizationName: string }) => {
     const data = await api.auth.register(regData);
-    localStorage.setItem("iris_token", data.accessToken);
-    localStorage.setItem("iris_refresh", data.refreshToken);
     setUser(data.user);
     setOrganization(data.organization);
   };
 
   const logout = async () => {
     try { await api.auth.logout(); } catch {}
-    localStorage.removeItem("iris_token");
-    localStorage.removeItem("iris_refresh");
     localStorage.removeItem("iris_device_id");
     setUser(null);
     setOrganization(null);
@@ -97,15 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = result.redirectUrl;
   };
 
-  const setSsoSession = (accessToken: string, refreshToken: string, userData: any, orgData: any) => {
-    localStorage.setItem("iris_token", accessToken);
-    localStorage.setItem("iris_refresh", refreshToken);
-    setUser(userData);
-    setOrganization(orgData);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, organization, loading, login, loginStep1, loginStep2, register, logout, ssoLogin, setSsoSession }}>
+    <AuthContext.Provider value={{ user, organization, loading, login, loginStep1, loginStep2, register, logout, ssoLogin }}>
       {children}
     </AuthContext.Provider>
   );

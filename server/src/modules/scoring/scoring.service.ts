@@ -180,6 +180,7 @@ export class ScoringService {
           temperature: 0.1,
           response_format: { type: 'json_object' },
         }),
+        signal: AbortSignal.timeout(30000),
       });
       const data = await resp.json();
       const text = data.choices?.[0]?.message?.content || '{}';

@@ -29,11 +29,9 @@ function SsoCallbackContent() {
       return;
     }
 
-    localStorage.setItem("iris_token", token);
-    localStorage.setItem("iris_refresh", refresh);
-
     api.auth
-      .me()
+      .ssoSession(token, refresh)
+      .then(() => api.auth.me())
       .then(() => {
         setStatus("success");
         setTimeout(() => router.push("/dashboard"), 1500);

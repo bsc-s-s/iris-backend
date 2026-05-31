@@ -52,9 +52,10 @@ export class ScanEngine {
       questions = questions.filter(q => opts.categories!.includes(q.category));
     }
 
-    const questionRecords = await Promise.all(
-      questions.map(q => this.prisma.irisQuestion.create({ data: q })),
-    );
+    await this.prisma.irisQuestion.createMany({ data: questions });
+    const questionRecords = await this.prisma.irisQuestion.findMany({
+      where: { category: { in: [...new Set(questions.map(q => q.category))] } },
+    });
 
     const scan = await this.prisma.irisScan.create({
       data: {
@@ -133,9 +134,9 @@ export class ScanEngine {
       })),
     );
 
-    for (const signal of analysis.signals.slice(0, 20)) {
-      await this.prisma.riskSignal.create({
-        data: {
+    if (analysis.signals.length > 0) {
+      await this.prisma.riskSignal.createMany({
+        data: analysis.signals.slice(0, 20).map(signal => ({
           type: signal.type || 'pattern',
           category: signal.category || 'anomaly',
           title: signal.title,
@@ -146,7 +147,7 @@ export class ScanEngine {
           metadata: signal.metadata || {},
           organizationId: orgId,
           scanId: scan.id,
-        },
+        })),
       });
     }
 
